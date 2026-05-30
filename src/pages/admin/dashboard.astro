@@ -1,0 +1,401 @@
+---
+// src/pages/admin/dashboard.astro
+import { supabase } from "../../lib/supabase.js";
+
+const title = "Admin Portal | Look Up";
+
+// Fetch all posts from Supabase database to display in the management inventory grid
+const { data: allPosts, error: fetchError } = await supabase
+  .from("posts")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+if (fetchError) {
+  console.error("Error loading dashboard posts:", fetchError.message);
+}
+
+const postsList = allPosts || [];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <style>
+      :root {
+        --bg: #f8f7f3;
+        --paper: #ffffff;
+        --text: #1d2430;
+        --muted: #687385;
+        --line: #d9dee7;
+        --accent: #263b59;
+        --accent-soft: #e7ecf3;
+        --danger: #a63a3a;
+        --success: #2e5630;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        padding: 40px 20px;
+      }
+
+      .dashboard-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: var(--paper);
+        padding: 32px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+
+      h1, h2 {
+        font-family: Georgia, serif;
+        margin-top: 0;
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 16px;
+        background: var(--bg);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        margin-bottom: 40px;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      input, textarea, select {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+        background: var(--paper);
+        color: var(--text);
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 12px;
+      }
+
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+      }
+
+      button:hover {
+        opacity: 0.9;
+      }
+      
+      button:active {
+        transform: scale(0.98);
+      }
+
+      .btn-primary { background: var(--accent); color: white; }
+      .btn-secondary { background: var(--line); color: var(--text); }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 0.95rem;
+      }
+
+      th, td {
+        padding: 14px;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+      }
+
+      th {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: bold;
+      }
+
+      .actions-cell {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-edit { background: #dfc443; color: #332d11; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; }
+      .btn-delete { background: var(--danger); color: white; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; }
+
+      #status-message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+        font-weight: bold;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="dashboard-container">
+      <a href="/content" style="text-decoration: none; font-size: 0.85rem; color: var(--muted); font-weight: bold;">← Back to Public Collection</a>
+      <h1 style="margin-top: 10px;">Control Panel Dashboard</h1>
+      
+      <div id="status-message"></div>
+
+      <h2 id="form-action-title">Create New Post</h2>
+      <form id="postCrudForm" class="form-grid">
+        <input type="hidden" id="post-id" value="" />
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <label>
+            Section Location
+            <select id="post-section" required>
+              <option value="curious">Curiosity Notes</option>
+              <option value="research">Research & Reports</option>
+            </select>
+          </label>
+
+          <label>
+            Publication Status
+            <select id="post-published">
+              <option value="true">Published (Live)</option>
+              <option value="false">Draft (Hidden)</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Article Title
+          <input type="text" id="post-title" required placeholder="Ex. The Physics of Cloud Formations" />
+        </label>
+
+        <label>
+          Feature Image URL
+          <input type="url" id="post-image-url" placeholder="https://images.unsplash.com/photo-example..." />
+        </label>
+
+        <label>
+          Excerpt / Short Summary (Shows on hover card)
+          <input type="text" id="post-excerpt" required placeholder="A brief hook sentence summarizing this note..." />
+        </label>
+
+        <label>
+          Full Content Material (Supports standard text/markdown)
+          <textarea id="post-content" required placeholder="Write or paste your article copy data here..."></textarea>
+        </label>
+
+        <div class="btn-group">
+          <button type="submit" class="btn-primary" id="submit-btn">Save Post Entry</button>
+          <button type="button" class="btn-secondary" id="clear-form-btn" style="display: none;">Cancel Edit</button>
+        </div>
+      </form>
+
+      <hr style="border: 0; border-top: 1px solid var(--line); margin: 40px 0;" />
+
+      <h2>Live Inventory Management</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Section</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {postsList.length === 0 ? (
+            <tr><td colspan="4" style="text-align: center; color: var(--muted);">No records found in database posts table.</td></tr>
+          ) : (
+            postsList.map((post: any) => (
+              <tr data-row-id={post.id}>
+                <td style="font-weight: bold;">{post.title}</td>
+                <td><code style="background: var(--accent-soft); padding: 2px 6px; border-radius: 4px;">{post.section}</code></td>
+                <td>{post.published ? "🟢 Live" : "⚪ Draft"}</td>
+                <td class="actions-cell">
+                  <button 
+                    class="btn-edit" 
+                    data-id={post.id}
+                    data-title={post.title}
+                    data-section={post.section}
+                    data-published={String(post.published)}
+                    data-image_url={post.image_url || ""}
+                    data-excerpt={post.excerpt || post.preview || ""}
+                    data-content={post.content || ""}
+                  >
+                    Edit
+                  </button>
+                  <button class="btn-delete" data-id={post.id}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      // Import client-side instance of Supabase wrapper
+      import { supabase } from "../../lib/supabase.js";
+
+      const crudForm = document.getElementById("postCrudForm") as HTMLFormElement;
+      const statusMessage = document.getElementById("status-message") as HTMLDivElement;
+      
+      const inputId = document.getElementById("post-id") as HTMLInputElement;
+      const inputSection = document.getElementById("post-section") as HTMLSelectElement;
+      const inputPublished = document.getElementById("post-published") as HTMLSelectElement;
+      const inputTitle = document.getElementById("post-title") as HTMLInputElement;
+      const inputImageUrl = document.getElementById("post-image-url") as HTMLInputElement;
+      const inputExcerpt = document.getElementById("post-excerpt") as HTMLInputElement;
+      const inputContent = document.getElementById("post-content") as HTMLTextAreaElement;
+
+      const formActionTitle = document.getElementById("form-action-title") as HTMLHeadingElement;
+      const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+      const clearFormBtn = document.getElementById("clear-form-btn") as HTMLButtonElement;
+
+      // --- 1. HANDLE EDIT MODE ACTIVATION ---
+      document.querySelectorAll(".btn-edit").forEach(button => {
+        button.addEventListener("click", () => {
+          const id = button.getAttribute("data-id") || "";
+          const title = button.getAttribute("data-title") || "";
+          const section = button.getAttribute("data-section") || "curious";
+          const published = button.getAttribute("data-published") || "true";
+          const imageUrl = button.getAttribute("data-image_url") || "";
+          const excerpt = button.getAttribute("data-excerpt") || "";
+          const content = button.getAttribute("data-content") || "";
+
+          // Hydrate form data properties instantly
+          inputId.value = id;
+          inputTitle.value = title;
+          inputSection.value = section;
+          inputPublished.value = published;
+          inputImageUrl.value = imageUrl;
+          inputExcerpt.value = excerpt;
+          inputContent.value = content;
+
+          // Alter form display context to state modifications are pending
+          formActionTitle.textContent = `Editing Article: "${title}"`;
+          submitBtn.textContent = "Update Existing Post";
+          clearFormBtn.style.display = "inline-block";
+          
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+
+      // --- 2. CLEAR/CANCEL FORM HANDLER ---
+      if (clearFormBtn) {
+        clearFormBtn.addEventListener("click", () => {
+          crudForm.reset();
+          inputId.value = "";
+          formActionTitle.textContent = "Create New Post";
+          submitBtn.textContent = "Save Post Entry";
+          clearFormBtn.style.display = "none";
+        });
+      }
+
+      function showStatus(message: string, isError = false) {
+        if (!statusMessage) return;
+        statusMessage.textContent = message;
+        statusMessage.style.display = "block";
+        statusMessage.style.background = isError ? "var(--danger)" : "var(--success)";
+        statusMessage.style.color = "white";
+        setTimeout(() => { statusMessage.style.display = "none"; }, 4000);
+      }
+
+      // --- 3. SUBMIT OPERATION (UPSERT SELECTOR) ---
+      crudForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+
+        const recordId = inputId.value;
+        const payload = {
+          title: inputTitle.value.trim(),
+          section: inputSection.value,
+          published: inputPublished.value === "true",
+          image_url: inputImageUrl.value.trim() || null,
+          excerpt: inputExcerpt.value.trim(),
+          content: inputContent.value.trim()
+        };
+
+        try {
+          let error = null;
+
+          if (recordId) {
+            // Apply targeted updates to matching rows
+            const { error: updateError } = await supabase
+              .from("posts")
+              .update(payload)
+              .eq("id", recordId);
+            error = updateError;
+          } else {
+            // Create a brand new record row
+            const { error: insertError } = await supabase
+              .from("posts")
+              .insert([payload]);
+            error = insertError;
+          }
+
+          if (error) throw error;
+
+          showStatus("Database successfully updated! Reloading layout view matrix...");
+          setTimeout(() => window.location.reload(), 1000);
+
+        } catch (err: any) {
+          showStatus("Database Sync Error: " + err.message, true);
+          submitBtn.disabled = false;
+        }
+      });
+
+      // --- 4. PERMANENT DELETE HOOK ---
+      document.querySelectorAll(".btn-delete").forEach(button => {
+        button.addEventListener("click", async () => {
+          const id = button.getAttribute("data-id");
+          if (!id) return;
+
+          const verify = confirm("⚠️ Danger! Are you sure you want to permanently remove this article from the database?");
+          if (!verify) return;
+
+          try {
+            const { error } = await supabase
+              .from("posts")
+              .delete()
+              .eq("id", id);
+
+            if (error) throw error;
+
+            showStatus("Post dropped successfully from inventory.");
+            
+            // Remove the table row visually without triggering a costly full page reload
+            const targetRow = document.querySelector(`tr[data-row-id="${id}"]`);
+            if (targetRow) targetRow.remove();
+
+          } catch (err: any) {
+            alert("Could not process row drop mutation: " + err.message);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

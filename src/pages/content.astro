@@ -1,0 +1,950 @@
+---
+// Import your local Supabase client configuration
+import { supabase } from "../lib/supabase.js";
+
+const title = "The Collection | Look Up";
+
+// 1. Fetch live "Curiosity Notes" matching the 'section' schema from new-post.astro
+const { data: databaseCuriousRows, error: curiosityError } = await supabase
+  .from("posts")
+  .select("*")
+  .eq("section", "curious") 
+  .eq("published", true)    
+  .order("created_at", { ascending: false });
+
+if (curiosityError) {
+  console.error("Error loading curiosity posts:", curiosityError.message);
+}
+
+// 2. Fetch live "Research & Reports" matching the 'section' schema from new-post.astro
+const { data: databaseResearchRows, error: researchError } = await supabase
+  .from("posts")
+  .select("*")
+  .eq("section", "research") 
+  .eq("published", true)
+  .order("created_at", { ascending: false });
+
+if (researchError) {
+  console.error("Error loading research posts:", researchError.message);
+}
+
+// Explicitly safely map your entries to guarantee markup properties exist
+const curiosityPosts = (databaseCuriousRows || []).map((post: any) => ({
+  title: post.title,
+  description: post.content || post.excerpt || "", 
+  previewText: post.excerpt || post.preview || "Click to read article...",
+  image: post.image_url || ""                      
+}));
+
+const researchPosts = (databaseResearchRows || []).map((post: any) => ({
+  title: post.title,
+  description: post.content || post.excerpt || "",
+  previewText: post.excerpt || post.preview || "Click to read article...",
+  image: post.image_url || ""
+}));
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+
+    <style>
+      :root {
+        --bg: #f8f7f3;
+        --paper: #ffffff;
+        --text: #1d2430;
+        --muted: #687385;
+        --soft: #eef1f5;
+        --line: #d9dee7;
+        --accent: #263b59;
+        --accent-soft: #e7ecf3;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* Top Navigation & Dropdown Styling */
+      .top-nav {
+        width: min(1120px, 92%);
+        margin: 0 auto;
+        padding: 24px 0 0;
+        display: flex;
+        justify-content: flex-end;
+        position: relative;
+        z-index: 3000;
+      }
+
+      .admin-dropdown-wrapper {
+        position: relative;
+      }
+
+      .admin-link {
+        font-family: Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 10px 0;
+        cursor: pointer;
+        display: block;
+        transition: color 0.2s ease;
+      }
+
+      .admin-dropdown-wrapper:hover .admin-link {
+        color: var(--accent);
+      }
+
+      /* Hover Login Panel Container */
+      .login-dropdown-panel {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 320px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        box-shadow: 0 15px 40px rgba(29, 36, 48, 0.15);
+        border-radius: 18px;
+        padding: 24px;
+        margin-top: 4px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(10px);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .admin-dropdown-wrapper:hover .login-dropdown-panel {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .login-dropdown-panel h4 {
+        margin: 0 0 4px;
+        font-size: 1.2rem;
+      }
+      .login-dropdown-panel .panel-sub {
+        font-family: Arial, sans-serif;
+        font-size: 0.72rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        letter-spacing: 0.5px;
+      }
+      .login-dropdown-panel form {
+        display: grid;
+        gap: 12px;
+      }
+      .login-dropdown-panel label {
+        display: grid;
+        gap: 4px;
+        font-family: Arial, sans-serif;
+        font-size: 0.7rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: var(--text);
+      }
+      .login-dropdown-panel input {
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        border-radius: 8px;
+        font-family: Georgia, serif;
+        font-size: 0.9rem;
+      }
+      .login-dropdown-panel button {
+        background: var(--accent);
+        color: var(--paper);
+        border: none;
+        padding: 10px;
+        border-radius: 999px;
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-top: 6px;
+        transition: background 0.2s;
+      }
+      .login-dropdown-panel button:hover {
+        background: #19273a;
+      }
+      .login-dropdown-panel #dropdown-message {
+        margin-top: 10px;
+        font-size: 0.75rem;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .page-wrapper {
+        width: min(1120px, 92%);
+        margin: 0 auto;
+        padding: 20px 0 80px;
+      }
+
+      .hero {
+        max-width: 820px;
+        margin-bottom: 64px;
+      }
+
+      .eyebrow {
+        font-family: Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 14px;
+      }
+
+      .hero h1 {
+        margin: 0 0 18px;
+        font-size: clamp(2.8rem, 7vw, 5.5rem);
+        line-height: 0.95;
+        letter-spacing: -2px;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 1.16rem;
+        line-height: 1.75;
+      }
+
+      .content-section {
+        margin-bottom: 78px;
+      }
+
+      .section-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 30px;
+        align-items: end;
+        margin-bottom: 24px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-copy {
+        max-width: 760px;
+      }
+
+      .section-copy h2 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        letter-spacing: -1px;
+      }
+
+      .section-copy p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 1.04rem;
+      }
+
+      .section-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .view-all-btn {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        color: var(--accent);
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-family: Arial, sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        transition:
+          background 0.2s ease,
+          border-color 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      .view-all-btn:hover {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+
+      .carousel-window {
+        overflow: hidden;
+      }
+
+      .article-track {
+        display: flex;
+        gap: 24px;
+        overflow-x: scroll; 
+        scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
+        padding: 4px 4px 24px 4px; 
+        scrollbar-width: auto; 
+        scrollbar-color: #b9c1ce var(--soft); 
+      }
+
+      .article-track::-webkit-scrollbar {
+        height: 10px; 
+        display: block;
+      }
+
+      .article-track::-webkit-scrollbar-track {
+        background: var(--soft);
+        border-radius: 999px;
+        border: 1px solid var(--line);
+      }
+
+      .article-track::-webkit-scrollbar-thumb {
+        background: #b9c1ce;
+        border-radius: 999px;
+        border: 2px solid var(--soft); 
+      }
+
+      .article-track::-webkit-scrollbar-thumb:hover {
+        background: var(--accent);
+      }
+
+      .article-preview, .all-list a {
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      /* Rounded Square Card Styling */
+      .article-preview {
+        flex: 0 0 220px;
+        width: 220px;
+        height: 220px;
+        scroll-snap-align: start;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .article-preview:hover {
+        border-color: var(--accent);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(38, 59, 89, 0.08);
+      }
+
+      .article-image-thumbnail {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        background: var(--accent-soft);
+        border: 1px solid var(--line);
+        flex-shrink: 0;
+      }
+      .article-image-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .article-preview h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        line-height: 1.3;
+        letter-spacing: -0.2px;
+        color: var(--text);
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .all-content {
+        display: none;
+        margin-top: 20px;
+        padding: 24px;
+        border-radius: 20px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+      }
+
+      .all-content.is-open {
+        display: block;
+      }
+
+      .all-content h3 {
+        margin: 0 0 18px;
+        font-size: 1.4rem;
+      }
+
+      .all-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .all-list a {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 16px;
+        align-items: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .all-list a:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+
+      .tiny-image {
+        width: 90px;
+        height: 70px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--accent-soft);
+        border: 1px solid var(--line);
+      }
+
+      .tiny-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .all-list h4 {
+        margin: 0 0 5px;
+        font-size: 1.05rem;
+        color: var(--text);
+      }
+
+      .all-list p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 0.95rem;
+      }
+
+      /* Floating Preview Box */
+      #hover-preview {
+        position: fixed;
+        pointer-events: none;
+        background: var(--paper);
+        border: 1.5px solid var(--accent);
+        box-shadow: 0 16px 40px rgba(29, 36, 48, 0.22);
+        padding: 22px;
+        border-radius: 16px;
+        width: 340px;
+        z-index: 4000;
+        display: none;
+        font-size: 0.98rem;
+        line-height: 1.5;
+        font-family: Georgia, serif;
+      }
+      #hover-preview .preview-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: var(--accent);
+        line-height: 1.2;
+      }
+      #hover-preview .preview-desc {
+        color: var(--muted);
+      }
+      #hover-preview .preview-hint {
+        font-family: Arial, sans-serif;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-top: 12px;
+        letter-spacing: 0.8px;
+        font-weight: bold;
+        border-top: 1px solid var(--soft);
+        padding-top: 8px;
+      }
+
+      /* Reader Viewport Modal Overlay */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(29, 36, 48, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 5000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.is-active {
+        display: flex;
+      }
+      .modal-window {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+        width: min(700px, 90%);
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .modal-window.is-minimized {
+        transform: translateY(35vh) scale(0.8);
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .modal-window.is-expanded {
+        width: 98vw;
+        height: 96vh;
+        max-height: 96vh;
+      }
+      .modal-header {
+        background: var(--soft);
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+      }
+      .modal-window-title {
+        font-family: Arial, sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--accent);
+      }
+      .modal-controls {
+        display: flex;
+        gap: 8px;
+      }
+      .modal-ctrl-btn {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+      .modal-ctrl-btn:hover {
+        background: var(--accent-soft);
+      }
+      .modal-body {
+        padding: 40px;
+        overflow-y: auto;
+      }
+      .modal-body h2 {
+        margin: 0 0 16px;
+        font-size: 2.2rem;
+        letter-spacing: -1px;
+        line-height: 1.1;
+      }
+      .modal-body .modal-img-wrap {
+        width: 100%;
+        max-height: 300px;
+        overflow: hidden;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        border: 1px solid var(--line);
+      }
+      .modal-body .modal-img-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .modal-body p {
+        font-size: 1.15rem;
+        line-height: 1.7;
+        color: var(--text);
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 940px) {
+        .section-top {
+          align-items: start;
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .top-nav {
+          width: min(94%, 100%);
+          padding: 24px 12px 0;
+        }
+        .page-wrapper {
+          width: min(94%, 100%);
+          padding: 24px 0 60px;
+        }
+        .section-actions {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+        .view-all-btn {
+          flex: 1;
+          text-align: center;
+        }
+        .all-list a {
+          grid-template-columns: 1fr;
+        }
+        .tiny-image {
+          width: 100%;
+          height: 150px;
+        }
+        .modal-body {
+          padding: 20px;
+        }
+        .login-dropdown-panel {
+          width: calc(100vw - 24px);
+          right: -12px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="top-nav">
+      <div class="admin-dropdown-wrapper">
+        <span class="admin-link">Admin Access ▾</span>
+        
+        <div class="login-dropdown-panel">
+          <h4>Admin Portal</h4>
+          <p class="panel-sub">Supabase Authenticator</p>
+          
+          <form id="dropdownLoginForm">
+            <label>
+              Email
+              <input type="email" id="dd-email" required placeholder="name@example.com" />
+            </label>
+            <label>
+              Password
+              <input type="password" id="dd-password" required placeholder="••••••••" />
+            </label>
+            <button type="submit">Log In</button>
+          </form>
+          <p id="dropdown-message">Database connectivity online</p>
+        </div>
+      </div>
+    </nav>
+
+    <div id="hover-preview">
+      <div class="preview-title" id="p-title">Title</div>
+      <div class="preview-desc" id="p-desc">Description</div>
+      <div class="preview-hint">✨ Click to open reader</div>
+    </div>
+
+    <div class="modal-overlay" id="article-modal">
+      <div class="modal-window" id="modal-window-box">
+        <div class="modal-header">
+          <div class="modal-window-title">Look Up Viewport</div>
+          <div class="modal-controls">
+            <button class="modal-ctrl-btn" id="modal-min" title="Minimize">─</button>
+            <button class="modal-ctrl-btn" id="modal-max" title="Expand">⤢</button>
+            <button class="modal-ctrl-btn" id="modal-close" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="modal-img-wrap" id="modal-img-container"></div>
+          <h2 id="modal-title">Title</h2>
+          <p id="modal-text">Content</p>
+        </div>
+      </div>
+    </div>
+
+    <main class="page-wrapper">
+      <header class="hero">
+        <div class="eyebrow">Look Up | By NateNate</div>
+        <h1>The Collection</h1>
+        <p>
+          A home for questions, notes, researched articles, and real-world reports.
+          Some pieces begin with curiosity. Others are built through study,
+          sources, and closer observation.
+        </p>
+      </header>
+
+      <section class="content-section">
+        <div class="section-top">
+          <div class="section-copy">
+            <div class="eyebrow">Substack-style writing</div>
+            <h2>Curiosity Notes</h2>
+            <p>
+              Shorter pieces based on things I questioned, noticed, wondered about,
+              or wanted to understand more clearly.
+            </p>
+          </div>
+
+          <div class="section-actions">
+            <button class="view-all-btn" data-toggle="curiosity-all">View All</button>
+          </div>
+        </div>
+
+        <div class="carousel-window">
+          <div class="article-track" id="curiosity-track">
+            {curiosityPosts.map((post) => (
+              <a class="article-preview" data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
+                {post.image && (
+                  <div class="article-image-thumbnail">
+                    <img src={post.image} alt={post.title} />
+                  </div>
+                )}
+                <h3>{post.title}</h3>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div class="all-content" id="curiosity-all">
+          <h3>All Curiosity Notes</h3>
+          <div class="all-list">
+            {curiosityPosts.map((post) => (
+              <a data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
+                {post.image && (
+                  <div class="tiny-image">
+                    <img src={post.image} alt={post.title} />
+                  </div>
+                )}
+                <div>
+                  <h4>{post.title}</h4>
+                  <p>{post.previewText}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-top">
+          <div class="section-copy">
+            <div class="eyebrow">Research-based writing</div>
+            <h2>Research & Reports</h2>
+            <p>
+              More developed articles based on research, sources, real-world
+              topics, local issues, science, history, or deeper study.
+            </p>
+          </div>
+
+          <div class="section-actions">
+            <button class="view-all-btn" data-toggle="research-all">View All</button>
+          </div>
+        </div>
+
+        <div class="carousel-window">
+          <div class="article-track" id="research-track">
+            {researchPosts.map((post) => (
+              <a class="article-preview" data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
+                {post.image && (
+                  <div class="article-image-thumbnail">
+                    <img src={post.image} alt={post.title} />
+                  </div>
+                )}
+                <h3>{post.title}</h3>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div class="all-content" id="research-all">
+          <h3>All Research & Reports</h3>
+          <div class="all-list">
+            {researchPosts.map((post) => (
+              <a data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
+                {post.image && (
+                  <div class="tiny-image">
+                    <img src={post.image} alt={post.title} />
+                  </div>
+                )}
+                <div>
+                  <h4>{post.title}</h4>
+                  <p>{post.previewText}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const toggleButtons = document.querySelectorAll("[data-toggle]");
+      toggleButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const contentId = button.getAttribute("data-toggle");
+          if (!contentId) return;
+          const content = document.getElementById(contentId);
+          if (content) {
+            content.classList.toggle("is-open");
+            button.textContent = content.classList.contains("is-open") ? "Hide List" : "View All";
+          }
+        });
+      });
+
+      const hoverPreview = document.getElementById("hover-preview") as HTMLDivElement | null;
+      const previewTitle = document.getElementById("p-title") as HTMLDivElement | null;
+      const previewDesc = document.getElementById("p-desc") as HTMLDivElement | null;
+
+      const modalOverlay = document.getElementById("article-modal") as HTMLDivElement | null;
+      const modalWindowBox = document.getElementById("modal-window-box") as HTMLDivElement | null;
+      const modalTitle = document.getElementById("modal-title") as HTMLHeadingElement | null;
+      const modalText = document.getElementById("modal-text") as HTMLParagraphElement | null;
+      const modalImgContainer = document.getElementById("modal-img-container") as HTMLDivElement | null;
+
+      const ctrlMin = document.getElementById("modal-min") as HTMLButtonElement | null;
+      const ctrlMax = document.getElementById("modal-max") as HTMLButtonElement | null;
+      const ctrlClose = document.getElementById("modal-close") as HTMLButtonElement | null;
+
+      setupArticleCards();
+
+      const observer = new MutationObserver(() => setupArticleCards());
+      document.querySelectorAll(".all-content").forEach(target => {
+        observer.observe(target, { attributes: true, attributeFilter: ['class'] });
+      });
+
+      function setupArticleCards() {
+        const articleCards = document.querySelectorAll(".article-preview, .all-list a");
+        articleCards.forEach((card) => {
+          if (card.hasAttribute('data-listeners-added')) return;
+          card.setAttribute('data-listeners-added', 'true');
+
+          card.addEventListener("mouseenter", () => {
+            const title = card.getAttribute("data-title") || "";
+            const hint = card.getAttribute("data-hint") || "";
+            if (previewTitle && previewDesc && hoverPreview) {
+              previewTitle.textContent = title;
+              previewDesc.textContent = hint;
+              hoverPreview.style.display = "block";
+            }
+          });
+
+          card.addEventListener("mousemove", (e: Event) => {
+            const mouseEvent = e as MouseEvent;
+            if (hoverPreview) {
+              hoverPreview.style.left = (mouseEvent.clientX + 20) + "px";
+              hoverPreview.style.top = (mouseEvent.clientY + 20) + "px";
+            }
+          });
+
+          card.addEventListener("mouseleave", () => {
+            if (hoverPreview) hoverPreview.style.display = "none";
+          });
+
+          card.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (hoverPreview) hoverPreview.style.display = "none";
+
+            const title = card.getAttribute("data-title") || "";
+            const textContent = card.getAttribute("data-desc") || "";
+            const imgUrl = card.getAttribute("data-img") || "";
+
+            if (modalTitle && modalText && modalImgContainer && modalOverlay && modalWindowBox) {
+              modalTitle.textContent = title;
+              modalText.textContent = textContent;
+              modalWindowBox.className = "modal-window";
+              modalImgContainer.innerHTML = "";
+
+              if (imgUrl) {
+                const img = document.createElement("img");
+                img.src = imgUrl;
+                img.alt = title;
+                modalImgContainer.style.display = "block";
+                modalImgContainer.appendChild(img);
+              } else {
+                modalImgContainer.style.display = "none";
+              }
+              modalOverlay.classList.add("is-active");
+            }
+          });
+        });
+      }
+
+      if (ctrlClose && modalOverlay) {
+        ctrlClose.addEventListener("click", () => modalOverlay.classList.remove("is-active"));
+      }
+      if (ctrlMax && modalWindowBox) {
+        ctrlMax.addEventListener("click", () => {
+          modalWindowBox.classList.remove("is-minimized");
+          modalWindowBox.classList.toggle("is-expanded");
+          ctrlMax.textContent = modalWindowBox.classList.contains("is-expanded") ? "⤭" : "⤢";
+        });
+      }
+      if (ctrlMin && modalWindowBox) {
+        ctrlMin.addEventListener("click", () => {
+          modalWindowBox.classList.remove("is-expanded");
+          modalWindowBox.classList.toggle("is-minimized");
+          if (ctrlMax) ctrlMax.textContent = "⤢";
+        });
+      }
+      if (modalOverlay) {
+        modalOverlay.addEventListener("click", (e) => {
+          if (e.target === modalOverlay) modalOverlay.classList.remove("is-active");
+        });
+      }
+
+      // Restored Dropdown Authenticator
+      const ddForm = document.getElementById("dropdownLoginForm") as HTMLFormElement | null;
+      const ddMessage = document.getElementById("dropdown-message") as HTMLParagraphElement | null;
+      const emailInput = document.getElementById("dd-email") as HTMLInputElement | null;
+      const passwordInput = document.getElementById("dd-password") as HTMLInputElement | null;
+
+      if (ddForm && ddMessage && emailInput && passwordInput) {
+        ddForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          ddMessage.style.color = "var(--accent)";
+          ddMessage.textContent = "Connecting to client profile...";
+
+          try {
+            const { supabase } = await import("../lib/supabase.js");
+            const { error } = await supabase.auth.signInWithPassword({
+              email: emailInput.value.trim(),
+              password: passwordInput.value,
+            });
+
+            if (error) {
+              ddMessage.style.color = "#a63a3a";
+              ddMessage.textContent = "Error: " + error.message;
+              return;
+            }
+
+            ddMessage.style.color = "#2e5630";
+            ddMessage.textContent = "Success! Forwarding redirection...";
+            window.location.href = "/admin/new-post";
+          } catch(err) {
+            ddMessage.style.color = "#a63a3a";
+            ddMessage.textContent = "Supabase initialization path error.";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
