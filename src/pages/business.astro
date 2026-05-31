@@ -1,0 +1,682 @@
+---
+const title = "Business Services | NateNate";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta
+      name="description"
+      content="Computer programming, website design, data analysis, spreadsheet, and dashboard services by NateNate."
+    />
+  </head>
+
+  <body>
+    <main class="business-page">
+      <section class="hero">
+        <div class="hero-content">
+          <p class="eyebrow">Computer Programming & Data Analysis</p>
+
+          <h1>NateNate Digital Services</h1>
+
+          <p class="hero-text">
+            Website design, front-end development, spreadsheet help, dashboard
+            creation, and data analysis services for small businesses, creators,
+            and personal projects.
+          </p>
+
+          <div class="hero-buttons">
+            <a href="#services" class="btn primary">View Services</a>
+            <a href="#projects" class="btn secondary">See Example Projects</a>
+            <a href="/request-service" class="btn third">Request a Service</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="intro">
+        <p class="eyebrow">What I Offer</p>
+        <h2>Digital services with clear service codes.</h2>
+        <p>
+          Each service has a code so customers can easily ask about the exact
+          type of work they need. Customers can view services without logging in,
+          but they will need an account to request a service.
+        </p>
+      </section>
+
+      <section id="services" class="services-section">
+        <div class="section-heading">
+          <p class="eyebrow">Services</p>
+          <h2>Choose a service.</h2>
+          <p>
+            These are the main computer, website, and data services offered.
+          </p>
+        </div>
+
+        <div id="servicesGrid" class="services-grid">
+          <p class="loading-text">Loading services...</p>
+        </div>
+      </section>
+
+      <section class="process-section">
+        <div class="section-heading">
+          <p class="eyebrow">How It Works</p>
+          <h2>Simple process, no tech fog.</h2>
+        </div>
+
+        <div class="process-grid">
+          <article>
+            <span>01</span>
+            <h3>Tell me what you need</h3>
+            <p>
+              Send the service code, a short description, and any files,
+              screenshots, or examples you already have.
+            </p>
+          </article>
+
+          <article>
+            <span>02</span>
+            <h3>I review the project</h3>
+            <p>
+              I look at the details and figure out what kind of page, report,
+              spreadsheet, or dashboard would fit best.
+            </p>
+          </article>
+
+          <article>
+            <span>03</span>
+            <h3>You get a clear plan</h3>
+            <p>
+              I explain what can be made, what information is needed, and what
+              the finished project will include.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="projects" class="projects-section">
+        <div class="section-heading">
+          <p class="eyebrow">Example Projects</p>
+          <h2>Work customers can picture.</h2>
+          <p>
+            Add real screenshots from your admin page as you finish projects.
+            These examples show the type of work connected to each service code.
+          </p>
+        </div>
+
+        <div id="projectsGrid" class="project-grid">
+          <p class="loading-text">Loading projects...</p>
+        </div>
+      </section>
+
+      <section id="contact" class="contact-section">
+        <div>
+          <p class="eyebrow">Work With Me</p>
+          <h2>Need a website, spreadsheet, or data project?</h2>
+          <p>
+            Send the service code you are interested in, what you need help
+            with, and any examples or pictures that explain your idea.
+          </p>
+        </div>
+
+        <div class="contact-card">
+          <a id="emailLink" href="#" class="contact-link">
+            Email loading...
+          </a>
+
+          <a id="phoneLink" href="#" class="contact-link">
+            Phone loading...
+          </a>
+
+          <a href="/request-service" class="contact-link">
+            Request a Service
+          </a>
+
+          <a href="/blog-cover" class="contact-link">
+            View My Blog
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { supabase } from "../lib/supabase.js";
+
+      const servicesGrid = document.querySelector("#servicesGrid");
+      const projectsGrid = document.querySelector("#projectsGrid");
+      const emailLink = document.querySelector("#emailLink");
+      const phoneLink = document.querySelector("#phoneLink");
+
+      function escapeHTML(value) {
+        if (!value) return "";
+
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function cleanPhoneForLink(phone) {
+        if (!phone) return "";
+        return phone.replace(/[^\d+]/g, "");
+      }
+
+      async function loadContact() {
+        const { data, error } = await supabase
+          .from("site_contact")
+          .select("*")
+          .limit(1)
+          .single();
+
+        if (error || !data) {
+          console.error(error);
+          emailLink.textContent = "Email unavailable";
+          phoneLink.textContent = "Phone unavailable";
+          return;
+        }
+
+        const email = data.business_email || "";
+        const phone = data.business_phone || "";
+
+        emailLink.textContent = email ? `Email: ${email}` : "Email unavailable";
+        emailLink.href = email ? `mailto:${email}` : "#";
+
+        phoneLink.textContent = phone ? `Call: ${phone}` : "Phone unavailable";
+        phoneLink.href = phone ? `tel:${cleanPhoneForLink(phone)}` : "#";
+      }
+
+      async function loadServices() {
+        const { data, error } = await supabase
+          .from("services")
+          .select("*")
+          .eq("is_active", true)
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.error(error);
+          servicesGrid.innerHTML =
+            '<p class="loading-text">Services could not load right now.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          servicesGrid.innerHTML =
+            '<p class="loading-text">No services have been added yet.</p>';
+          return;
+        }
+
+        servicesGrid.innerHTML = data
+          .map((service) => {
+            const title = escapeHTML(service.title);
+            const code = escapeHTML(service.service_code);
+            const description = escapeHTML(service.description);
+            const image = escapeHTML(
+              service.image_url || "/images/default-service.jpg"
+            );
+
+            return `
+              <article class="service-card">
+                <div class="service-image">
+                  <img src="${image}" alt="${title}" />
+                </div>
+
+                <div class="service-content">
+                  <span class="service-code">${code}</span>
+                  <h3>${title}</h3>
+                  <p>${description}</p>
+
+                  <a href="/request-service?service=${encodeURIComponent(
+                    service.service_code
+                  )}" class="small-link">
+                    Request ${code}
+                  </a>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadProjects() {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("id", { ascending: false });
+
+        if (error) {
+          console.error(error);
+          projectsGrid.innerHTML =
+            '<p class="loading-text">Projects could not load right now.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          projectsGrid.innerHTML =
+            '<p class="loading-text">No example projects have been added yet.</p>';
+          return;
+        }
+
+        projectsGrid.innerHTML = data
+          .map((project) => {
+            const title = escapeHTML(project.title);
+            const code = escapeHTML(project.service_code || "PROJECT");
+            const category = escapeHTML(project.category || "");
+            const description = escapeHTML(project.description || "");
+            const image = escapeHTML(
+              project.image_url || "/images/default-project.jpg"
+            );
+
+            return `
+              <article class="project-card">
+                <img src="${image}" alt="${title}" />
+
+                <div class="project-info">
+                  <span>${code}</span>
+                  <h3>${title}</h3>
+                  ${category ? `<p class="category">${category}</p>` : ""}
+                  <p>${description}</p>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      loadContact();
+      loadServices();
+      loadProjects();
+    </script>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    font-family:
+      Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f6f7fb;
+    color: #171923;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  .business-page {
+    min-height: 100vh;
+  }
+
+  .hero {
+    min-height: 82vh;
+    display: flex;
+    align-items: center;
+    padding: 5rem 8%;
+    color: white;
+    background:
+      linear-gradient(135deg, rgba(8, 16, 34, 0.92), rgba(17, 42, 78, 0.78)),
+      radial-gradient(circle at top right, rgba(77, 166, 255, 0.35), transparent 35%),
+      #081022;
+  }
+
+  .hero-content {
+    max-width: 850px;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #3277ff;
+  }
+
+  .hero .eyebrow {
+    color: #7bb7ff;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+
+  h1 {
+    margin-bottom: 1rem;
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.07em;
+  }
+
+  h2 {
+    margin-bottom: 1rem;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+  }
+
+  h3 {
+    margin-bottom: 0.65rem;
+  }
+
+  .hero-text {
+    max-width: 720px;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.84);
+  }
+
+  .hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0.9rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 900;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn.primary {
+    background: #3277ff;
+    color: white;
+    box-shadow: 0 18px 45px rgba(50, 119, 255, 0.28);
+  }
+
+  .btn.secondary,
+  .btn.third {
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .btn.third {
+    background: rgba(50, 119, 255, 0.22);
+  }
+
+  .intro,
+  .services-section,
+  .process-section,
+  .projects-section {
+    padding: 5rem 8%;
+  }
+
+  .intro {
+    max-width: 980px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .intro p,
+  .section-heading p,
+  .process-grid p,
+  .contact-section p {
+    color: #5a6172;
+    font-size: 1.05rem;
+    line-height: 1.75;
+  }
+
+  .section-heading {
+    max-width: 780px;
+    margin-bottom: 2rem;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+
+  .service-card {
+    overflow: hidden;
+    border-radius: 1.5rem;
+    background: white;
+    border: 1px solid rgba(23, 25, 35, 0.08);
+    box-shadow: 0 16px 45px rgba(16, 24, 40, 0.07);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 24px 60px rgba(16, 24, 40, 0.11);
+  }
+
+  .service-image {
+    height: 190px;
+    background: #dce5f7;
+  }
+
+  .service-image img,
+  .project-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .service-content {
+    padding: 1.4rem;
+  }
+
+  .service-code {
+    display: inline-flex;
+    margin-bottom: 0.8rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: #eaf1ff;
+    color: #245fd1;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .service-content h3 {
+    font-size: 1.35rem;
+  }
+
+  .service-content p {
+    color: #5a6172;
+    line-height: 1.65;
+  }
+
+  .small-link {
+    display: inline-flex;
+    margin-top: 1rem;
+    color: #245fd1;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .small-link:hover {
+    text-decoration: underline;
+  }
+
+  .process-section {
+    background: #081022;
+    color: white;
+  }
+
+  .process-section .section-heading p {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .process-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .process-grid article {
+    padding: 1.5rem;
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.075);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .process-grid span {
+    display: inline-block;
+    margin-bottom: 1.2rem;
+    color: #7bb7ff;
+    font-size: 0.9rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+  }
+
+  .process-grid p {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .project-card {
+    overflow: hidden;
+    border-radius: 1.4rem;
+    background: white;
+    border: 1px solid rgba(23, 25, 35, 0.08);
+    box-shadow: 0 16px 45px rgba(16, 24, 40, 0.07);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 24px 60px rgba(16, 24, 40, 0.11);
+  }
+
+  .project-card img {
+    height: 210px;
+    background: #dce5f7;
+  }
+
+  .project-info {
+    padding: 1.2rem;
+  }
+
+  .project-info span {
+    display: inline-block;
+    margin-bottom: 0.65rem;
+    color: #245fd1;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+  }
+
+  .project-info h3 {
+    font-size: 1.1rem;
+  }
+
+  .project-info p {
+    color: #5a6172;
+    line-height: 1.55;
+  }
+
+  .project-info .category {
+    margin-bottom: 0.55rem;
+    color: #171923;
+    font-weight: 900;
+  }
+
+  .contact-section {
+    display: grid;
+    grid-template-columns: 1fr 0.8fr;
+    gap: 2rem;
+    align-items: center;
+    margin: 0 8% 5rem;
+    padding: 3rem;
+    border-radius: 2rem;
+    background: white;
+    border: 1px solid rgba(23, 25, 35, 0.08);
+    box-shadow: 0 20px 60px rgba(16, 24, 40, 0.08);
+  }
+
+  .contact-card {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .contact-link {
+    display: block;
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    background: #eaf1ff;
+    color: #245fd1;
+    font-weight: 900;
+    text-decoration: none;
+    transition:
+      transform 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .contact-link:hover {
+    transform: translateX(4px);
+    background: #dce8ff;
+  }
+
+  .loading-text {
+    grid-column: 1 / -1;
+    color: #5a6172;
+    font-weight: 800;
+  }
+
+  @media (max-width: 1100px) {
+    .services-grid,
+    .process-grid,
+    .contact-section {
+      grid-template-columns: 1fr;
+    }
+
+    .project-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .hero {
+      min-height: 75vh;
+      padding: 4rem 6%;
+    }
+
+    .intro,
+    .services-section,
+    .process-section,
+    .projects-section {
+      padding: 4rem 6%;
+    }
+
+    .project-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .contact-section {
+      margin-left: 6%;
+      margin-right: 6%;
+      padding: 2rem;
+    }
+  }
+</style>
