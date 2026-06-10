@@ -94,18 +94,72 @@ const title = "Business Services | NateNate";
       </section>
     </main>
 
-    <script type="module">
-      import { supabase } from "../lib/supabase.js";
+    <script>
+      import { createClient } from "@supabase/supabase-js";
 
-      const servicesGrid = document.querySelector("#servicesGrid");
-      const projectsGrid = document.querySelector("#projectsGrid");
-      const serviceCount = document.querySelector("#serviceCount");
-      const projectCount = document.querySelector("#projectCount");
-      const emailLink = document.querySelector("#emailLink");
-      const phoneLink = document.querySelector("#phoneLink");
+      type SiteContact = {
+        id?: number;
+        business_email?: string | null;
+        business_phone?: string | null;
+        updated_at?: string | null;
+      };
 
-      function escapeHTML(value) {
-        if (!value) return "";
+      type Service = {
+        id?: number;
+        title?: string | null;
+        service_code?: string | null;
+        short_description?: string | null;
+        description?: string | null;
+        estimate_text?: string | null;
+        image_url?: string | null;
+        is_active?: boolean | null;
+      };
+
+      type Project = {
+        id?: number;
+        title?: string | null;
+        service_code?: string | null;
+        category?: string | null;
+        description?: string | null;
+        image_url?: string | null;
+        project_url?: string | null;
+      };
+
+      const supabaseUrl =
+        import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+
+      const supabaseAnonKey =
+        import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
+        import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const servicesGrid = document.querySelector(
+        "#servicesGrid"
+      ) as HTMLDivElement | null;
+
+      const projectsGrid = document.querySelector(
+        "#projectsGrid"
+      ) as HTMLDivElement | null;
+
+      const serviceCount = document.querySelector(
+        "#serviceCount"
+      ) as HTMLSpanElement | null;
+
+      const projectCount = document.querySelector(
+        "#projectCount"
+      ) as HTMLSpanElement | null;
+
+      const emailLink = document.querySelector(
+        "#emailLink"
+      ) as HTMLAnchorElement | null;
+
+      const phoneLink = document.querySelector(
+        "#phoneLink"
+      ) as HTMLAnchorElement | null;
+
+      function escapeHTML(
+        value: string | number | boolean | null | undefined
+      ): string {
+        if (value === null || value === undefined || value === "") return "";
 
         return String(value)
           .replaceAll("&", "&amp;")
@@ -115,83 +169,195 @@ const title = "Business Services | NateNate";
           .replaceAll("'", "&#039;");
       }
 
-      function cleanPhoneForLink(phone) {
+      function cleanPhoneForLink(phone: string | null | undefined): string {
         if (!phone) return "";
         return phone.replace(/[^\d+]/g, "");
       }
 
-      async function loadContact() {
-        const { data, error } = await supabase
-          .from("site_contact")
-          .select("*")
-          .limit(1)
-          .maybeSingle();
+      function showGlobalError(message: string): void {
+        console.error(message);
 
-        if (error || !data) {
-          console.error(error);
-          emailLink.textContent = "Email unavailable";
-          phoneLink.textContent = "Phone unavailable";
-          return;
+        if (serviceCount) serviceCount.textContent = "Error";
+        if (projectCount) projectCount.textContent = "Error";
+
+        if (servicesGrid) {
+          servicesGrid.innerHTML = `<p class="loading-text">${escapeHTML(
+            message
+          )}</p>`;
         }
 
-        const email = data.business_email || "";
-        const phone = data.business_phone || "";
+        if (projectsGrid) {
+          projectsGrid.innerHTML =
+            '<p class="loading-text">Portfolio could not load.</p>';
+        }
 
-        emailLink.textContent = email ? `Email: ${email}` : "Email unavailable";
-        emailLink.href = email ? `mailto:${email}` : "#";
+        if (emailLink) {
+          emailLink.textContent = "Email unavailable";
+          emailLink.href = "#";
+        }
 
-        phoneLink.textContent = phone ? `Call: ${phone}` : "Phone unavailable";
-        phoneLink.href = phone ? `tel:${cleanPhoneForLink(phone)}` : "#";
+        if (phoneLink) {
+          phoneLink.textContent = "Phone unavailable";
+          phoneLink.href = "#";
+        }
       }
 
-      async function loadServices() {
-        const { data, error } = await supabase
-          .from("services")
-          .select("*")
-          .eq("is_active", true)
-          .order("id", { ascending: true });
+      if (!supabaseUrl || !supabaseAnonKey) {
+        showGlobalError(
+          "Supabase environment variables are missing. Check Netlify environment variables."
+        );
+      } else {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        if (error) {
-          console.error(error);
-          serviceCount.textContent = "Error";
-          servicesGrid.innerHTML =
-            '<p class="loading-text">Services could not load.</p>';
-          return;
+        async function loadContact(): Promise<void> {
+          if (!emailLink || !phoneLink) return;
+
+          const { data, error } = await supabase
+            .from("site_contact")
+            .select("*")
+            .not("business_email", "is", null)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle<SiteContact>();
+
+          if (error || !data) {
+            console.error("Contact load error:", error);
+            emailLink.textContent = "Email unavailable";
+            emailLink.href = "#";
+            phoneLink.textContent = "Phone unavailable";
+            phoneLink.href = "#";
+            return;
+          }
+
+          const email = data.business_email || "";
+          const phone = data.business_phone || "";
+
+          emailLink.textContent = email ? `Email: ${email}` : "Email unavailable";
+          emailLink.href = email ? `mailto:${email}` : "#";
+
+          phoneLink.textContent = phone ? `Call: ${phone}` : "Phone unavailable";
+          phoneLink.href = phone ? `tel:${cleanPhoneForLink(phone)}` : "#";
         }
 
-        if (!data || data.length === 0) {
-          serviceCount.textContent = "0";
-          servicesGrid.innerHTML =
-            '<p class="loading-text">No services have been added yet.</p>';
-          return;
+        async function loadServices(): Promise<void> {
+          if (!servicesGrid || !serviceCount) return;
+
+          const { data, error } = await supabase
+            .from("services")
+            .select("*")
+            .eq("is_active", true)
+            .order("id", { ascending: true })
+            .returns<Service[]>();
+
+          if (error) {
+            console.error("Services load error:", error);
+            serviceCount.textContent = "Error";
+            servicesGrid.innerHTML =
+              '<p class="loading-text">Services could not load.</p>';
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            serviceCount.textContent = "0";
+            servicesGrid.innerHTML =
+              '<p class="loading-text">No services have been added yet.</p>';
+            return;
+          }
+
+          serviceCount.textContent = `${data.length} Active`;
+
+          servicesGrid.innerHTML = data
+            .map((service: Service) => {
+              const title = escapeHTML(service.title);
+              const code = escapeHTML(service.service_code);
+              const description = escapeHTML(
+                service.short_description || service.description || ""
+              );
+              const estimate = escapeHTML(service.estimate_text || "");
+              const image = escapeHTML(
+                service.image_url || "/images/default-service.jpg"
+              );
+
+              return `
+                <article class="service-card">
+                  <a href="/request-service?service=${encodeURIComponent(
+                    service.service_code || ""
+                  )}">
+                    <div class="card-image">
+                      <img src="${image}" alt="${title}" />
+                    </div>
+
+                    <div class="card-body">
+                      <div class="card-topline">
+                        <span>${code}</span>
+                      </div>
+
+                      <h3>${title}</h3>
+
+                      ${description ? `<p>${description}</p>` : ""}
+
+                      ${
+                        estimate
+                          ? `<div class="estimate-chip">${estimate}</div>`
+                          : ""
+                      }
+
+                      <div class="card-action">Request Service →</div>
+                    </div>
+                  </a>
+                </article>
+              `;
+            })
+            .join("");
         }
 
-        serviceCount.textContent = `${data.length} Active`;
+        async function loadProjects(): Promise<void> {
+          if (!projectsGrid || !projectCount) return;
 
-        servicesGrid.innerHTML = data
-          .map((service) => {
-            const title = escapeHTML(service.title);
-            const code = escapeHTML(service.service_code);
-            const description = escapeHTML(
-              service.short_description || service.description || ""
-            );
-            const estimate = escapeHTML(service.estimate_text || "");
-            const image = escapeHTML(
-              service.image_url || "/images/default-service.jpg"
-            );
+          const { data, error } = await supabase
+            .from("projects")
+            .select("*")
+            .order("id", { ascending: false })
+            .returns<Project[]>();
 
-            return `
-              <article class="service-card">
-                <a href="/request-service?service=${encodeURIComponent(
-                  service.service_code
-                )}">
-                  <div class="card-image">
+          if (error) {
+            console.error("Projects load error:", error);
+            projectCount.textContent = "Error";
+            projectsGrid.innerHTML =
+              '<p class="loading-text">Portfolio could not load.</p>';
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            projectCount.textContent = "0";
+            projectsGrid.innerHTML =
+              '<p class="loading-text">No portfolio projects have been added yet.</p>';
+            return;
+          }
+
+          projectCount.textContent = `${data.length} Projects`;
+
+          projectsGrid.innerHTML = data
+            .map((project: Project) => {
+              const title = escapeHTML(project.title);
+              const code = escapeHTML(project.service_code || "PROJECT");
+              const category = escapeHTML(project.category || "");
+              const description = escapeHTML(project.description || "");
+              const image = escapeHTML(
+                project.image_url || "/images/default-project.jpg"
+              );
+              const projectUrl = escapeHTML(project.project_url || "");
+
+              return `
+                <article class="project-card">
+                  <div class="project-image">
                     <img src="${image}" alt="${title}" />
                   </div>
 
-                  <div class="card-body">
+                  <div class="project-body">
                     <div class="card-topline">
                       <span>${code}</span>
+                      ${category ? `<span>${category}</span>` : ""}
                     </div>
 
                     <h3>${title}</h3>
@@ -199,85 +365,21 @@ const title = "Business Services | NateNate";
                     ${description ? `<p>${description}</p>` : ""}
 
                     ${
-                      estimate
-                        ? `<div class="estimate-chip">${estimate}</div>`
+                      projectUrl
+                        ? `<a href="${projectUrl}" target="_blank" rel="noopener">View Project →</a>`
                         : ""
                     }
-
-                    <div class="card-action">Request Service →</div>
                   </div>
-                </a>
-              </article>
-            `;
-          })
-          .join("");
-      }
-
-      async function loadProjects() {
-        const { data, error } = await supabase
-          .from("projects")
-          .select("*")
-          .order("id", { ascending: false });
-
-        if (error) {
-          console.error(error);
-          projectCount.textContent = "Error";
-          projectsGrid.innerHTML =
-            '<p class="loading-text">Portfolio could not load.</p>';
-          return;
+                </article>
+              `;
+            })
+            .join("");
         }
 
-        if (!data || data.length === 0) {
-          projectCount.textContent = "0";
-          projectsGrid.innerHTML =
-            '<p class="loading-text">No portfolio projects have been added yet.</p>';
-          return;
-        }
-
-        projectCount.textContent = `${data.length} Projects`;
-
-        projectsGrid.innerHTML = data
-          .map((project) => {
-            const title = escapeHTML(project.title);
-            const code = escapeHTML(project.service_code || "PROJECT");
-            const category = escapeHTML(project.category || "");
-            const description = escapeHTML(project.description || "");
-            const image = escapeHTML(
-              project.image_url || "/images/default-project.jpg"
-            );
-            const projectUrl = escapeHTML(project.project_url || "");
-
-            return `
-              <article class="project-card">
-                <div class="project-image">
-                  <img src="${image}" alt="${title}" />
-                </div>
-
-                <div class="project-body">
-                  <div class="card-topline">
-                    <span>${code}</span>
-                    ${category ? `<span>${category}</span>` : ""}
-                  </div>
-
-                  <h3>${title}</h3>
-
-                  ${description ? `<p>${description}</p>` : ""}
-
-                  ${
-                    projectUrl
-                      ? `<a href="${projectUrl}" target="_blank" rel="noopener">View Project →</a>`
-                      : ""
-                  }
-                </div>
-              </article>
-            `;
-          })
-          .join("");
+        loadContact();
+        loadServices();
+        loadProjects();
       }
-
-      loadContact();
-      loadServices();
-      loadProjects();
     </script>
   </body>
 </html>
@@ -288,8 +390,16 @@ const title = "Business Services | NateNate";
     font-family:
       Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background:
-      radial-gradient(circle at top right, rgba(43, 199, 178, 0.08), transparent 34rem),
-      radial-gradient(circle at bottom left, rgba(120, 131, 150, 0.08), transparent 30rem),
+      radial-gradient(
+        circle at top right,
+        rgba(43, 199, 178, 0.08),
+        transparent 34rem
+      ),
+      radial-gradient(
+        circle at bottom left,
+        rgba(120, 131, 150, 0.08),
+        transparent 30rem
+      ),
       #f4f6f8;
     color: #101418;
   }
@@ -436,7 +546,11 @@ const title = "Business Services | NateNate";
     overflow: hidden;
     border-radius: 1.4rem;
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94)),
+      linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(248, 250, 252, 0.94)
+      ),
       #ffffff;
     border: 1px solid rgba(16, 20, 24, 0.08);
     box-shadow: 0 18px 45px rgba(16, 20, 24, 0.08);
@@ -462,7 +576,11 @@ const title = "Business Services | NateNate";
     align-items: center;
     padding: 3rem;
     background:
-      linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(31, 41, 55, 0.92)),
+      linear-gradient(
+        135deg,
+        rgba(17, 24, 39, 0.96),
+        rgba(31, 41, 55, 0.92)
+      ),
       #111827;
     color: #f8fafc;
   }
