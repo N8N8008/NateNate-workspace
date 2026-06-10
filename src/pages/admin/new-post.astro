@@ -2,9 +2,17 @@
 // src/pages/admin/new-post.astro
 import { supabase } from "../../lib/supabase.js";
 
-const title = "Admin Portal | Look Up";
+const title = "Admin Portal | NateNate";
 
-// Fetch all posts from your Supabase database table
+function attr(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+// Blog posts
 const { data: allPosts, error: fetchError } = await supabase
   .from("posts")
   .select("*")
@@ -15,6 +23,44 @@ if (fetchError) {
 }
 
 const postsList = allPosts || [];
+
+// Business contact
+const { data: contactData, error: contactError } = await supabase
+  .from("site_contact")
+  .select("*")
+  .order("id", { ascending: true })
+  .limit(1)
+  .maybeSingle();
+
+if (contactError) {
+  console.error("Error loading business contact:", contactError.message);
+}
+
+const contactInfo = contactData || null;
+
+// Services
+const { data: allServices, error: servicesError } = await supabase
+  .from("services")
+  .select("*")
+  .order("id", { ascending: true });
+
+if (servicesError) {
+  console.error("Error loading services:", servicesError.message);
+}
+
+const servicesList = allServices || [];
+
+// Projects
+const { data: allProjects, error: projectsError } = await supabase
+  .from("projects")
+  .select("*")
+  .order("id", { ascending: false });
+
+if (projectsError) {
+  console.error("Error loading projects:", projectsError.message);
+}
+
+const projectsList = allProjects || [];
 ---
 
 <html lang="en">
@@ -22,6 +68,7 @@ const postsList = allPosts || [];
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+
     <style>
       :root {
         --bg: #f8f7f3;
@@ -30,32 +77,154 @@ const postsList = allPosts || [];
         --muted: #687385;
         --line: #d9dee7;
         --accent: #263b59;
+        --accent-dark: #16243a;
         --accent-soft: #e7ecf3;
         --danger: #a63a3a;
+        --danger-soft: #f9dddd;
         --success: #2e5630;
+        --success-soft: #e2f2e3;
+        --teal: #0f766e;
+        --teal-soft: #e6fffb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       body {
         margin: 0;
-        background: var(--bg);
+        background:
+          radial-gradient(circle at top right, rgba(15, 118, 110, 0.08), transparent 34rem),
+          radial-gradient(circle at bottom left, rgba(38, 59, 89, 0.08), transparent 30rem),
+          var(--bg);
         color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
         padding: 40px 20px;
       }
 
       .dashboard-container {
-        max-width: 1000px;
+        max-width: 1180px;
         margin: 0 auto;
         background: var(--paper);
         padding: 32px;
-        border-radius: 16px;
+        border-radius: 18px;
         border: 1px solid var(--line);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
       }
 
-      h1, h2 {
+      .top-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .back-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .back-links a,
+      .quick-nav a {
+        text-decoration: none;
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 800;
+        padding: 9px 12px;
+        border-radius: 999px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+      }
+
+      .back-links a:hover,
+      .quick-nav a:hover {
+        color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      h1,
+      h2,
+      h3 {
         font-family: Georgia, serif;
         margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 6px;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 0.95;
+        letter-spacing: -0.055em;
+      }
+
+      .intro {
+        color: var(--muted);
+        margin: 0 0 22px;
+        line-height: 1.6;
+        font-weight: 650;
+      }
+
+      .quick-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px;
+        margin: 22px 0 32px;
+        border-radius: 14px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+      }
+
+      .admin-section {
+        padding: 24px;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        margin-top: 24px;
+      }
+
+      .admin-section:nth-of-type(even) {
+        background: #fcfcfb;
+      }
+
+      .section-heading {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .section-heading h2 {
+        margin: 0;
+      }
+
+      .section-heading p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-weight: 650;
+        line-height: 1.5;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 10px;
+        border-radius: 999px;
+        color: var(--teal);
+        background: rgba(15, 118, 110, 0.1);
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
 
       .form-grid {
@@ -65,7 +234,13 @@ const postsList = allPosts || [];
         padding: 20px;
         border-radius: 12px;
         border: 1px solid var(--line);
-        margin-bottom: 40px;
+        margin-bottom: 28px;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
       }
 
       label {
@@ -78,7 +253,9 @@ const postsList = allPosts || [];
         color: var(--accent);
       }
 
-      input, textarea, select {
+      input,
+      textarea,
+      select {
         padding: 12px;
         border: 1px solid var(--line);
         border-radius: 8px;
@@ -93,42 +270,88 @@ const postsList = allPosts || [];
         min-height: 120px;
       }
 
+      .small-note {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 650;
+        text-transform: none;
+        line-height: 1.4;
+      }
+
       .btn-group {
         display: flex;
+        flex-wrap: wrap;
         gap: 12px;
       }
 
       button {
-        padding: 12px 24px;
+        padding: 12px 22px;
         border: none;
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
-        transition: opacity 0.2s, transform 0.1s;
+        transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
       }
 
       button:hover {
-        opacity: 0.9;
+        opacity: 0.92;
       }
-      
+
       button:active {
         transform: scale(0.98);
       }
 
-      .btn-primary { background: var(--accent); color: white; }
-      .btn-secondary { background: var(--line); color: var(--text); }
-      
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        box-shadow: 0 10px 24px rgba(38, 59, 89, 0.18);
+      }
+
+      .btn-secondary {
+        background: var(--line);
+        color: var(--text);
+      }
+
+      .btn-edit {
+        background: #dfc443;
+        color: #332d11;
+        padding: 7px 11px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+      }
+
+      .btn-delete {
+        background: var(--danger);
+        color: white;
+        padding: 7px 11px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+      }
+
+      .btn-toggle {
+        background: var(--teal);
+        color: white;
+        padding: 7px 11px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        margin-top: 14px;
         font-size: 0.95rem;
       }
 
-      th, td {
+      th,
+      td {
         padding: 14px;
         text-align: left;
         border-bottom: 1px solid var(--line);
+        vertical-align: top;
       }
 
       th {
@@ -139,13 +362,17 @@ const postsList = allPosts || [];
 
       .actions-cell {
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
       }
 
-      .btn-edit { background: #dfc443; color: #332d11; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; }
-      .btn-delete { background: var(--danger); color: white; padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; }
+      code {
+        background: var(--accent-soft);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
 
-      #status-message {
+      .status-message {
         padding: 12px;
         border-radius: 8px;
         margin-bottom: 20px;
@@ -153,115 +380,505 @@ const postsList = allPosts || [];
         font-weight: bold;
         text-align: center;
       }
+
+      .status-message.success {
+        display: block;
+        background: var(--success);
+        color: white;
+      }
+
+      .status-message.error {
+        display: block;
+        background: var(--danger);
+        color: white;
+      }
+
+      .mini-preview {
+        max-width: 320px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .image-note {
+        max-width: 260px;
+        overflow-wrap: anywhere;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      hr {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 34px 0;
+      }
+
+      @media (max-width: 850px) {
+        body {
+          padding: 18px 10px;
+        }
+
+        .dashboard-container {
+          padding: 18px;
+        }
+
+        .admin-section {
+          padding: 16px;
+        }
+
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          display: block;
+        }
+
+        thead {
+          display: none;
+        }
+
+        tr {
+          padding: 12px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        td {
+          border-bottom: 0;
+          padding: 7px 0;
+        }
+
+        td::before {
+          content: attr(data-label);
+          display: block;
+          color: var(--accent);
+          font-size: 0.72rem;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 3px;
+        }
+      }
     </style>
   </head>
+
   <body>
-
     <div class="dashboard-container">
-      <a href="/content" style="text-decoration: none; font-size: 0.85rem; color: var(--muted); font-weight: bold;">← Back to Public View</a>
-      <h1 style="margin-top: 10px;">Post Manager Dashboard</h1>
-      
-      <div id="status-message"></div>
+      <div class="top-row">
+        <div class="back-links">
+          <a href="/content">← Blog Public View</a>
+          <a href="/business">← Business Public View</a>
+        </div>
+      </div>
 
-      <h2 id="form-action-title">Create New Post</h2>
-      <form id="postCrudForm" class="form-grid">
-        <input type="hidden" id="post-id" value="" />
+      <h1>Website Admin Dashboard</h1>
+      <p class="intro">
+        This one page controls both sides of your site: blog posts and the business page.
+      </p>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="quick-nav">
+        <a href="#blog-posts">Blog Posts</a>
+        <a href="#business-contact">Business Contact</a>
+        <a href="#business-services">Services</a>
+        <a href="#business-projects">Portfolio Projects</a>
+      </div>
+
+      <div id="status-message" class="status-message"></div>
+
+      <section id="blog-posts" class="admin-section">
+        <div class="section-heading">
+          <div>
+            <h2 id="form-action-title">Create New Post</h2>
+            <p>Add, edit, or delete posts for the blog/content side.</p>
+          </div>
+          <span class="pill">{postsList.length} posts</span>
+        </div>
+
+        <form id="postCrudForm" class="form-grid">
+          <input type="hidden" id="post-id" value="" />
+
+          <div class="two-col">
+            <label>
+              Section Location
+              <select id="post-section" required>
+                <option value="curious">Curiosity Notes</option>
+                <option value="research">Research & Reports</option>
+              </select>
+            </label>
+
+            <label>
+              Publication Status
+              <select id="post-published">
+                <option value="true">Published (Live)</option>
+                <option value="false">Draft (Hidden)</option>
+              </select>
+            </label>
+          </div>
+
           <label>
-            Section Location
-            <select id="post-section" required>
-              <option value="curious">Curiosity Notes</option>
-              <option value="research">Research & Reports</option>
-            </select>
+            Article Title
+            <input type="text" id="post-title" required placeholder="Ex. The Physics of Cloud Formations" />
           </label>
 
           <label>
-            Publication Status
-            <select id="post-published">
-              <option value="true">Published (Live)</option>
-              <option value="false">Draft (Hidden)</option>
-            </select>
+            Feature Image URL
+            <input type="url" id="post-image-url" placeholder="https://images.unsplash.com/example..." />
           </label>
-        </div>
 
-        <label>
-          Article Title
-          <input type="text" id="post-title" required placeholder="Ex. The Physics of Cloud Formations" />
-        </label>
+          <label>
+            Excerpt / Short Summary
+            <input type="text" id="post-excerpt" required placeholder="A brief summary sentence..." />
+          </label>
 
-        <label>
-          Feature Image URL
-          <input type="url" id="post-image-url" placeholder="https://images.unsplash.com/example..." />
-        </label>
+          <label>
+            Full Content Material
+            <textarea id="post-content" required placeholder="Write or paste your article markdown/text content here..."></textarea>
+          </label>
 
-        <label>
-          Excerpt / Short Summary
-          <input type="text" id="post-excerpt" required placeholder="A brief summary sentence..." />
-        </label>
+          <div class="btn-group">
+            <button type="submit" class="btn-primary" id="submit-btn">Save Post Entry</button>
+            <button type="button" class="btn-secondary" id="clear-form-btn" style="display: none;">Cancel Edit</button>
+          </div>
+        </form>
 
-        <label>
-          Full Content Material
-          <textarea id="post-content" required placeholder="Write or paste your article markdown/text content here..."></textarea>
-        </label>
-
-        <div class="btn-group">
-          <button type="submit" class="btn-primary" id="submit-btn">Save Post Entry</button>
-          <button type="button" class="btn-secondary" id="clear-form-btn" style="display: none;">Cancel Edit</button>
-        </div>
-      </form>
-
-      <hr style="border: 0; border-top: 1px solid var(--line); margin: 40px 0;" />
-
-      <h2>Existing Database Inventory</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Section</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {postsList.length === 0 ? (
-            <tr><td colspan="4" style="text-align: center; color: var(--muted);">No records found in database posts table.</td></tr>
-          ) : (
-            postsList.map((post: any) => (
-              <tr data-row-id={post.id}>
-                <td style="font-weight: bold;">{post.title}</td>
-                <td><code style="background: var(--accent-soft); padding: 2px 6px; border-radius: 4px;">{post.section}</code></td>
-                <td>{post.published ? "🟢 Live" : "⚪ Draft"}</td>
-                <td class="actions-cell">
-                  <button 
-                    class="btn-edit" 
-                    data-id={post.id}
-                    data-title={post.title}
-                    data-section={post.section}
-                    data-published={String(post.published)}
-                    data-image_url={post.image_url || ""}
-                    data-excerpt={post.excerpt || post.preview || ""}
-                    data-content={post.content || ""}
-                  >
-                    Edit
-                  </button>
-                  <button class="btn-delete" data-id={post.id}>
-                    Delete
-                  </button>
+        <h3>Existing Blog Posts</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Section</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {postsList.length === 0 ? (
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--muted);">
+                  No records found in database posts table.
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              postsList.map((post: any) => (
+                <tr data-post-row-id={post.id}>
+                  <td data-label="Title" style="font-weight: bold;">{post.title}</td>
+                  <td data-label="Section"><code>{post.section}</code></td>
+                  <td data-label="Status">{post.published ? "🟢 Live" : "⚪ Draft"}</td>
+                  <td data-label="Actions" class="actions-cell">
+                    <button
+                      type="button"
+                      class="btn-edit post-edit-btn"
+                      data-id={attr(post.id)}
+                      data-title={attr(post.title)}
+                      data-section={attr(post.section)}
+                      data-published={attr(String(post.published))}
+                      data-image-url={attr(post.image_url || "")}
+                      data-excerpt={attr(post.excerpt || post.preview || "")}
+                      data-content={attr(post.content || "")}
+                    >
+                      Edit
+                    </button>
+                    <button type="button" class="btn-delete post-delete-btn" data-id={attr(post.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section id="business-contact" class="admin-section">
+        <div class="section-heading">
+          <div>
+            <h2>Business Contact Info</h2>
+            <p>This updates the email and phone number shown on your business page.</p>
+          </div>
+          <span class="pill">site_contact</span>
+        </div>
+
+        <form id="contactForm" class="form-grid">
+          <input type="hidden" id="contact-id" value={contactInfo?.id || ""} />
+
+          <div class="two-col">
+            <label>
+              Business Email
+              <input
+                type="email"
+                id="business-email"
+                value={contactInfo?.business_email || ""}
+                placeholder="yourname@email.com"
+              />
+            </label>
+
+            <label>
+              Business Phone
+              <input
+                type="text"
+                id="business-phone"
+                value={contactInfo?.business_phone || ""}
+                placeholder="321-555-1234"
+              />
+            </label>
+          </div>
+
+          <div class="btn-group">
+            <button type="submit" class="btn-primary">Save Contact Info</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="business-services" class="admin-section">
+        <div class="section-heading">
+          <div>
+            <h2 id="service-form-title">Add Business Service</h2>
+            <p>Add, edit, turn off, or delete services from your business page.</p>
+          </div>
+          <span class="pill">{servicesList.length} services</span>
+        </div>
+
+        <form id="serviceForm" class="form-grid">
+          <input type="hidden" id="service-id" value="" />
+
+          <div class="two-col">
+            <label>
+              Service Title
+              <input type="text" id="service-title" required placeholder="Websites & Landing Pages" />
+            </label>
+
+            <label>
+              Service Code
+              <input type="text" id="service-code" required placeholder="WEBSITE" />
+              <span class="small-note">Short label. Example: WEBSITE, INVOICE, DATA, TRANSCRIBE</span>
+            </label>
+          </div>
+
+          <label>
+            Service Image URL
+            <input type="url" id="service-image-url" placeholder="https://..." />
+          </label>
+
+          <label>
+            Service Description
+            <textarea id="service-description" required placeholder="Describe what this service includes..."></textarea>
+          </label>
+
+          <label>
+            Active Status
+            <select id="service-active">
+              <option value="true">Active: show on business page</option>
+              <option value="false">Hidden: do not show on business page</option>
+            </select>
+          </label>
+
+          <div class="btn-group">
+            <button type="submit" class="btn-primary" id="service-submit-btn">Save Service</button>
+            <button type="button" class="btn-secondary" id="service-clear-btn" style="display: none;">Cancel Edit</button>
+          </div>
+        </form>
+
+        <h3>Existing Services</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {servicesList.length === 0 ? (
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--muted);">
+                  No services found.
+                </td>
+              </tr>
+            ) : (
+              servicesList.map((service: any) => (
+                <tr data-service-row-id={service.id}>
+                  <td data-label="Service" style="font-weight: bold;">{service.title}</td>
+                  <td data-label="Code"><code>{service.service_code}</code></td>
+                  <td data-label="Status">{service.is_active ? "🟢 Active" : "⚪ Hidden"}</td>
+                  <td data-label="Description" class="mini-preview">{service.description}</td>
+                  <td data-label="Actions" class="actions-cell">
+                    <button
+                      type="button"
+                      class="btn-edit service-edit-btn"
+                      data-id={attr(service.id)}
+                      data-title={attr(service.title)}
+                      data-code={attr(service.service_code)}
+                      data-description={attr(service.description)}
+                      data-image-url={attr(service.image_url || "")}
+                      data-active={attr(String(service.is_active))}
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      class="btn-toggle service-toggle-btn"
+                      data-id={attr(service.id)}
+                      data-current={attr(String(service.is_active))}
+                    >
+                      {service.is_active ? "Hide" : "Show"}
+                    </button>
+
+                    <button type="button" class="btn-delete service-delete-btn" data-id={attr(service.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      <section id="business-projects" class="admin-section">
+        <div class="section-heading">
+          <div>
+            <h2 id="project-form-title">Add Portfolio Project</h2>
+            <p>Add, edit, or delete portfolio examples from your business page.</p>
+          </div>
+          <span class="pill">{projectsList.length} projects</span>
+        </div>
+
+        <form id="projectForm" class="form-grid">
+          <input type="hidden" id="project-id" value="" />
+
+          <div class="two-col">
+            <label>
+              Project Title
+              <input type="text" id="project-title" required placeholder="Inventory Tracker Demo" />
+            </label>
+
+            <label>
+              Service Code
+              <input type="text" id="project-service-code" placeholder="DATA" />
+            </label>
+          </div>
+
+          <div class="two-col">
+            <label>
+              Project Category
+              <input type="text" id="project-category" placeholder="Spreadsheet / Website / Data Tool" />
+            </label>
+
+            <label>
+              Project Link URL
+              <input type="url" id="project-url" placeholder="https://..." />
+            </label>
+          </div>
+
+          <label>
+            Project Image URL
+            <input type="url" id="project-image-url" placeholder="https://..." />
+          </label>
+
+          <label>
+            Project Description
+            <textarea id="project-description" required placeholder="Describe what this project does..."></textarea>
+          </label>
+
+          <div class="btn-group">
+            <button type="submit" class="btn-primary" id="project-submit-btn">Save Project</button>
+            <button type="button" class="btn-secondary" id="project-clear-btn" style="display: none;">Cancel Edit</button>
+          </div>
+        </form>
+
+        <h3>Existing Portfolio Projects</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Code</th>
+              <th>Category</th>
+              <th>Link</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projectsList.length === 0 ? (
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--muted);">
+                  No projects found.
+                </td>
+              </tr>
+            ) : (
+              projectsList.map((project: any) => (
+                <tr data-project-row-id={project.id}>
+                  <td data-label="Project" style="font-weight: bold;">{project.title}</td>
+                  <td data-label="Code"><code>{project.service_code || "PROJECT"}</code></td>
+                  <td data-label="Category">{project.category || ""}</td>
+                  <td data-label="Link" class="image-note">{project.project_url || ""}</td>
+                  <td data-label="Description" class="mini-preview">{project.description}</td>
+                  <td data-label="Actions" class="actions-cell">
+                    <button
+                      type="button"
+                      class="btn-edit project-edit-btn"
+                      data-id={attr(project.id)}
+                      data-title={attr(project.title)}
+                      data-service-code={attr(project.service_code || "")}
+                      data-category={attr(project.category || "")}
+                      data-description={attr(project.description || "")}
+                      data-image-url={attr(project.image_url || "")}
+                      data-project-url={attr(project.project_url || "")}
+                    >
+                      Edit
+                    </button>
+
+                    <button type="button" class="btn-delete project-delete-btn" data-id={attr(project.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
     </div>
 
     <script>
       import { supabase } from "../../lib/supabase.js";
 
-      const crudForm = document.getElementById("postCrudForm") as HTMLFormElement;
       const statusMessage = document.getElementById("status-message") as HTMLDivElement;
-      
+
+      function showStatus(message: string, isError = false) {
+        if (!statusMessage) return;
+
+        statusMessage.textContent = message;
+        statusMessage.className = "status-message " + (isError ? "error" : "success");
+
+        setTimeout(() => {
+          statusMessage.className = "status-message";
+          statusMessage.textContent = "";
+        }, 4500);
+      }
+
+      function generateSlug(text: string): string {
+        return text
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/[\s_-]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      function scrollToSection(id: string) {
+        const section = document.getElementById(id);
+        if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      // Blog post admin
+      const crudForm = document.getElementById("postCrudForm") as HTMLFormElement;
       const inputId = document.getElementById("post-id") as HTMLInputElement;
       const inputSection = document.getElementById("post-section") as HTMLSelectElement;
       const inputPublished = document.getElementById("post-published") as HTMLSelectElement;
@@ -269,48 +886,30 @@ const postsList = allPosts || [];
       const inputImageUrl = document.getElementById("post-image-url") as HTMLInputElement;
       const inputExcerpt = document.getElementById("post-excerpt") as HTMLInputElement;
       const inputContent = document.getElementById("post-content") as HTMLTextAreaElement;
-
       const formActionTitle = document.getElementById("form-action-title") as HTMLHeadingElement;
       const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
       const clearFormBtn = document.getElementById("clear-form-btn") as HTMLButtonElement;
 
-      // Helper function to turn a text string into a clean URL slug
-      function generateSlug(text: string): string {
-        return text
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '') // Remove all non-word chars (except spaces and hyphens)
-          .replace(/[\s_-]+/g, '-')  // Replace spaces and underscores with a single hyphen
-          .replace(/^-+|-+$/g, '');  // Trim hyphens from the start and end
-      }
-
-      // --- 1. POPULATE FORM WHEN CLICKING EDIT ---
-      document.querySelectorAll(".btn-edit").forEach(button => {
+      document.querySelectorAll(".post-edit-btn").forEach((button) => {
         button.addEventListener("click", () => {
-          const id = button.getAttribute("data-id") || "";
-          const title = button.getAttribute("data-title") || "";
-          const section = button.getAttribute("data-section") || "curious";
-          const published = button.getAttribute("data-published") || "true";
-          const imageUrl = button.getAttribute("data-image_url") || "";
-          const excerpt = button.getAttribute("data-excerpt") || "";
-          const content = button.getAttribute("data-content") || "";
+          const buttonEl = button as HTMLButtonElement;
 
-          inputId.value = id;
-          inputTitle.value = title;
-          inputSection.value = section;
-          inputPublished.value = published;
-          inputImageUrl.value = imageUrl;
-          inputExcerpt.value = excerpt;
-          inputContent.value = content;
+          inputId.value = buttonEl.dataset.id || "";
+          inputTitle.value = buttonEl.dataset.title || "";
+          inputSection.value = buttonEl.dataset.section || "curious";
+          inputPublished.value = buttonEl.dataset.published || "true";
+          inputImageUrl.value = buttonEl.dataset.imageUrl || "";
+          inputExcerpt.value = buttonEl.dataset.excerpt || "";
+          inputContent.value = buttonEl.dataset.content || "";
 
-          formActionTitle.textContent = `Editing Article: "${title}"`;
+          formActionTitle.textContent = `Editing Article: "${inputTitle.value}"`;
           submitBtn.textContent = "Update Existing Post";
           clearFormBtn.style.display = "inline-block";
-          
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+
+          scrollToSection("blog-posts");
         });
       });
 
-      // --- 2. CANCEL FORM WORKFLOW ---
       if (clearFormBtn) {
         clearFormBtn.addEventListener("click", () => {
           crudForm.reset();
@@ -321,16 +920,6 @@ const postsList = allPosts || [];
         });
       }
 
-      function showStatus(message: string, isError = false) {
-        if (!statusMessage) return;
-        statusMessage.textContent = message;
-        statusMessage.style.display = "block";
-        statusMessage.style.background = isError ? "var(--danger)" : "var(--success)";
-        statusMessage.style.color = "white";
-        setTimeout(() => { statusMessage.style.display = "none"; }, 4000);
-      }
-
-      // --- 3. SUBMIT OPERATION (INSERTS OR UPDATES) ---
       crudForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         submitBtn.disabled = true;
@@ -340,7 +929,7 @@ const postsList = allPosts || [];
 
         const payload = {
           title: cleanTitle,
-          slug: generateSlug(cleanTitle), // Auto-generates slug to satisfy database constraint!
+          slug: generateSlug(cleanTitle),
           section: inputSection.value,
           published: inputPublished.value === "true",
           image_url: inputImageUrl.value.trim() || null,
@@ -352,38 +941,37 @@ const postsList = allPosts || [];
           let error = null;
 
           if (recordId) {
-            // Modify existing item row
             const { error: updateError } = await supabase
               .from("posts")
               .update(payload)
               .eq("id", recordId);
+
             error = updateError;
           } else {
-            // Create a brand new database record row
             const { error: insertError } = await supabase
               .from("posts")
               .insert([payload]);
+
             error = insertError;
           }
 
           if (error) throw error;
 
-          showStatus("Database operation successful! Reloading inventory view...");
-          setTimeout(() => window.location.reload(), 1000);
-
+          showStatus("Blog post saved. Reloading admin page...");
+          setTimeout(() => window.location.reload(), 900);
         } catch (err: any) {
           showStatus("Database Error: " + err.message, true);
           submitBtn.disabled = false;
         }
       });
 
-      // --- 4. LIVE DELETE HANDLER ---
-      document.querySelectorAll(".btn-delete").forEach(button => {
+      document.querySelectorAll(".post-delete-btn").forEach((button) => {
         button.addEventListener("click", async () => {
-          const id = button.getAttribute("data-id");
+          const buttonEl = button as HTMLButtonElement;
+          const id = buttonEl.dataset.id;
           if (!id) return;
 
-          const verify = confirm("⚠️ Are you sure you want to permanently delete this post entry from your database?");
+          const verify = confirm("Delete this blog post permanently?");
           if (!verify) return;
 
           try {
@@ -394,13 +982,291 @@ const postsList = allPosts || [];
 
             if (error) throw error;
 
-            showStatus("Post dropped successfully.");
-            
-            const targetRow = document.querySelector(`tr[data-row-id="${id}"]`);
+            showStatus("Blog post deleted.");
+            const targetRow = document.querySelector(`tr[data-post-row-id="${id}"]`);
             if (targetRow) targetRow.remove();
-
           } catch (err: any) {
-            alert("Could not process row removal: " + err.message);
+            showStatus("Could not delete post: " + err.message, true);
+          }
+        });
+      });
+
+      // Business contact admin
+      const contactForm = document.getElementById("contactForm") as HTMLFormElement;
+      const contactId = document.getElementById("contact-id") as HTMLInputElement;
+      const businessEmail = document.getElementById("business-email") as HTMLInputElement;
+      const businessPhone = document.getElementById("business-phone") as HTMLInputElement;
+
+      contactForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const payload = {
+          business_email: businessEmail.value.trim() || null,
+          business_phone: businessPhone.value.trim() || null
+        };
+
+        try {
+          let error = null;
+
+          if (contactId.value) {
+            const { error: updateError } = await supabase
+              .from("site_contact")
+              .update(payload)
+              .eq("id", contactId.value);
+
+            error = updateError;
+          } else {
+            const { error: insertError } = await supabase
+              .from("site_contact")
+              .insert([payload]);
+
+            error = insertError;
+          }
+
+          if (error) throw error;
+
+          showStatus("Business contact info saved. Reloading...");
+          setTimeout(() => window.location.reload(), 900);
+        } catch (err: any) {
+          showStatus("Could not save contact info: " + err.message, true);
+        }
+      });
+
+      // Services admin
+      const serviceForm = document.getElementById("serviceForm") as HTMLFormElement;
+      const serviceId = document.getElementById("service-id") as HTMLInputElement;
+      const serviceTitle = document.getElementById("service-title") as HTMLInputElement;
+      const serviceCode = document.getElementById("service-code") as HTMLInputElement;
+      const serviceImageUrl = document.getElementById("service-image-url") as HTMLInputElement;
+      const serviceDescription = document.getElementById("service-description") as HTMLTextAreaElement;
+      const serviceActive = document.getElementById("service-active") as HTMLSelectElement;
+      const serviceFormTitle = document.getElementById("service-form-title") as HTMLHeadingElement;
+      const serviceSubmitBtn = document.getElementById("service-submit-btn") as HTMLButtonElement;
+      const serviceClearBtn = document.getElementById("service-clear-btn") as HTMLButtonElement;
+
+      document.querySelectorAll(".service-edit-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          const buttonEl = button as HTMLButtonElement;
+
+          serviceId.value = buttonEl.dataset.id || "";
+          serviceTitle.value = buttonEl.dataset.title || "";
+          serviceCode.value = buttonEl.dataset.code || "";
+          serviceImageUrl.value = buttonEl.dataset.imageUrl || "";
+          serviceDescription.value = buttonEl.dataset.description || "";
+          serviceActive.value = buttonEl.dataset.active || "true";
+
+          serviceFormTitle.textContent = `Editing Service: "${serviceTitle.value}"`;
+          serviceSubmitBtn.textContent = "Update Service";
+          serviceClearBtn.style.display = "inline-block";
+
+          scrollToSection("business-services");
+        });
+      });
+
+      serviceClearBtn.addEventListener("click", () => {
+        serviceForm.reset();
+        serviceId.value = "";
+        serviceFormTitle.textContent = "Add Business Service";
+        serviceSubmitBtn.textContent = "Save Service";
+        serviceClearBtn.style.display = "none";
+      });
+
+      serviceForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        serviceSubmitBtn.disabled = true;
+
+        const payload = {
+          title: serviceTitle.value.trim(),
+          service_code: serviceCode.value.trim().toUpperCase(),
+          description: serviceDescription.value.trim(),
+          image_url: serviceImageUrl.value.trim() || null,
+          is_active: serviceActive.value === "true"
+        };
+
+        try {
+          let error = null;
+
+          if (serviceId.value) {
+            const { error: updateError } = await supabase
+              .from("services")
+              .update(payload)
+              .eq("id", serviceId.value);
+
+            error = updateError;
+          } else {
+            const { error: insertError } = await supabase
+              .from("services")
+              .insert([payload]);
+
+            error = insertError;
+          }
+
+          if (error) throw error;
+
+          showStatus("Service saved. Reloading admin page...");
+          setTimeout(() => window.location.reload(), 900);
+        } catch (err: any) {
+          showStatus("Could not save service: " + err.message, true);
+          serviceSubmitBtn.disabled = false;
+        }
+      });
+
+      document.querySelectorAll(".service-toggle-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const buttonEl = button as HTMLButtonElement;
+          const id = buttonEl.dataset.id;
+          const current = buttonEl.dataset.current === "true";
+
+          if (!id) return;
+
+          try {
+            const { error } = await supabase
+              .from("services")
+              .update({ is_active: !current })
+              .eq("id", id);
+
+            if (error) throw error;
+
+            showStatus(current ? "Service hidden." : "Service made active.");
+            setTimeout(() => window.location.reload(), 800);
+          } catch (err: any) {
+            showStatus("Could not update service status: " + err.message, true);
+          }
+        });
+      });
+
+      document.querySelectorAll(".service-delete-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const buttonEl = button as HTMLButtonElement;
+          const id = buttonEl.dataset.id;
+
+          if (!id) return;
+
+          const verify = confirm("Delete this service permanently?");
+          if (!verify) return;
+
+          try {
+            const { error } = await supabase
+              .from("services")
+              .delete()
+              .eq("id", id);
+
+            if (error) throw error;
+
+            showStatus("Service deleted.");
+            const targetRow = document.querySelector(`tr[data-service-row-id="${id}"]`);
+            if (targetRow) targetRow.remove();
+          } catch (err: any) {
+            showStatus("Could not delete service: " + err.message, true);
+          }
+        });
+      });
+
+      // Projects admin
+      const projectForm = document.getElementById("projectForm") as HTMLFormElement;
+      const projectId = document.getElementById("project-id") as HTMLInputElement;
+      const projectTitle = document.getElementById("project-title") as HTMLInputElement;
+      const projectServiceCode = document.getElementById("project-service-code") as HTMLInputElement;
+      const projectCategory = document.getElementById("project-category") as HTMLInputElement;
+      const projectUrl = document.getElementById("project-url") as HTMLInputElement;
+      const projectImageUrl = document.getElementById("project-image-url") as HTMLInputElement;
+      const projectDescription = document.getElementById("project-description") as HTMLTextAreaElement;
+      const projectFormTitle = document.getElementById("project-form-title") as HTMLHeadingElement;
+      const projectSubmitBtn = document.getElementById("project-submit-btn") as HTMLButtonElement;
+      const projectClearBtn = document.getElementById("project-clear-btn") as HTMLButtonElement;
+
+      document.querySelectorAll(".project-edit-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+          const buttonEl = button as HTMLButtonElement;
+
+          projectId.value = buttonEl.dataset.id || "";
+          projectTitle.value = buttonEl.dataset.title || "";
+          projectServiceCode.value = buttonEl.dataset.serviceCode || "";
+          projectCategory.value = buttonEl.dataset.category || "";
+          projectUrl.value = buttonEl.dataset.projectUrl || "";
+          projectImageUrl.value = buttonEl.dataset.imageUrl || "";
+          projectDescription.value = buttonEl.dataset.description || "";
+
+          projectFormTitle.textContent = `Editing Project: "${projectTitle.value}"`;
+          projectSubmitBtn.textContent = "Update Project";
+          projectClearBtn.style.display = "inline-block";
+
+          scrollToSection("business-projects");
+        });
+      });
+
+      projectClearBtn.addEventListener("click", () => {
+        projectForm.reset();
+        projectId.value = "";
+        projectFormTitle.textContent = "Add Portfolio Project";
+        projectSubmitBtn.textContent = "Save Project";
+        projectClearBtn.style.display = "none";
+      });
+
+      projectForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        projectSubmitBtn.disabled = true;
+
+        const payload = {
+          title: projectTitle.value.trim(),
+          service_code: projectServiceCode.value.trim().toUpperCase() || null,
+          category: projectCategory.value.trim() || null,
+          description: projectDescription.value.trim(),
+          image_url: projectImageUrl.value.trim() || null,
+          project_url: projectUrl.value.trim() || null
+        };
+
+        try {
+          let error = null;
+
+          if (projectId.value) {
+            const { error: updateError } = await supabase
+              .from("projects")
+              .update(payload)
+              .eq("id", projectId.value);
+
+            error = updateError;
+          } else {
+            const { error: insertError } = await supabase
+              .from("projects")
+              .insert([payload]);
+
+            error = insertError;
+          }
+
+          if (error) throw error;
+
+          showStatus("Project saved. Reloading admin page...");
+          setTimeout(() => window.location.reload(), 900);
+        } catch (err: any) {
+          showStatus("Could not save project: " + err.message, true);
+          projectSubmitBtn.disabled = false;
+        }
+      });
+
+      document.querySelectorAll(".project-delete-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const buttonEl = button as HTMLButtonElement;
+          const id = buttonEl.dataset.id;
+
+          if (!id) return;
+
+          const verify = confirm("Delete this portfolio project permanently?");
+          if (!verify) return;
+
+          try {
+            const { error } = await supabase
+              .from("projects")
+              .delete()
+              .eq("id", id);
+
+            if (error) throw error;
+
+            showStatus("Project deleted.");
+            const targetRow = document.querySelector(`tr[data-project-row-id="${id}"]`);
+            if (targetRow) targetRow.remove();
+          } catch (err: any) {
+            showStatus("Could not delete project: " + err.message, true);
           }
         });
       });
