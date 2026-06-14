@@ -1,5 +1,48 @@
 ---
+import { supabase } from "../lib/supabase.js";
+
 const title = "Business Services | NateNate";
+
+const { data: contactRows, error: contactError } = await supabase
+  .from("site_contact")
+  .select("*")
+  .order("updated_at", { ascending: false })
+  .limit(1);
+
+if (contactError) {
+  console.error("Error loading contact info:", contactError.message);
+}
+
+const contact = contactRows?.[0];
+
+const { data: serviceRows, error: servicesError } = await supabase
+  .from("services")
+  .select("*")
+  .eq("is_active", true)
+  .order("id", { ascending: true });
+
+if (servicesError) {
+  console.error("Error loading services:", servicesError.message);
+}
+
+const services = serviceRows || [];
+
+const { data: projectRows, error: projectsError } = await supabase
+  .from("projects")
+  .select("*")
+  .order("id", { ascending: false });
+
+if (projectsError) {
+  console.error("Error loading projects:", projectsError.message);
+}
+
+const projects = projectRows || [];
+
+function cleanPhoneForLink(phone: string
+) {
+  if (!phone) return "";
+  return phone.replace(/[^\d+]/g, "");
+}
 ---
 
 <html lang="en">
@@ -52,22 +95,85 @@ const title = "Business Services | NateNate";
         <section id="services" class="content-section">
           <div class="section-bar">
             <h2>Services</h2>
-            <span id="serviceCount">Loading</span>
+            <span>{services.length} Active</span>
           </div>
 
-          <div id="servicesGrid" class="services-grid">
-            <p class="loading-text">Loading services...</p>
+          <div class="services-grid">
+            {services.length === 0 ? (
+              <p class="loading-text">No services have been added yet.</p>
+            ) : (
+              services.map((service) => (
+                <article class="service-card">
+                  <a href={`/request-service?service=${service.service_code || ""}`}>
+                    <div class="card-image">
+                      <img
+                        src={service.image_url || "/images/default-service.jpg"}
+                        alt={service.title || "Service"}
+                      />
+                    </div>
+
+                    <div class="card-body">
+                      <div class="card-topline">
+                        <span>{service.service_code || "SERVICE"}</span>
+                      </div>
+
+                      <h3>{service.title}</h3>
+
+                      {(service.short_description || service.description) && (
+                        <p>{service.short_description || service.description}</p>
+                      )}
+
+                      {service.estimate_text && (
+                        <div class="estimate-chip">{service.estimate_text}</div>
+                      )}
+
+                      <div class="card-action">Request Service →</div>
+                    </div>
+                  </a>
+                </article>
+              ))
+            )}
           </div>
         </section>
 
         <section id="portfolio" class="content-section">
           <div class="section-bar">
             <h2>Portfolio</h2>
-            <span id="projectCount">Loading</span>
+            <span>{projects.length} Projects</span>
           </div>
 
-          <div id="projectsGrid" class="projects-grid">
-            <p class="loading-text">Loading portfolio...</p>
+          <div class="projects-grid">
+            {projects.length === 0 ? (
+              <p class="loading-text">No portfolio projects have been added yet.</p>
+            ) : (
+              projects.map((project) => (
+                <article class="project-card">
+                  <div class="project-image">
+                    <img
+                      src={project.image_url || "/images/default-project.jpg"}
+                      alt={project.title || "Project"}
+                    />
+                  </div>
+
+                  <div class="project-body">
+                    <div class="card-topline">
+                      <span>{project.service_code || "PROJECT"}</span>
+                      {project.category && <span>{project.category}</span>}
+                    </div>
+
+                    <h3>{project.title}</h3>
+
+                    {project.description && <p>{project.description}</p>}
+
+                    {project.project_url && (
+                      <a href={project.project_url} target="_blank" rel="noopener">
+                        View Project →
+                      </a>
+                    )}
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </section>
 
@@ -78,12 +184,24 @@ const title = "Business Services | NateNate";
           </div>
 
           <div class="contact-grid">
-            <a id="emailLink" href="#" class="contact-card">
-              Email loading...
+            <a
+              href={contact?.business_email ? `mailto:${contact.business_email}` : "#"}
+              class="contact-card"
+            >
+              {contact?.business_email
+                ? `Email: ${contact.business_email}`
+                : "Email unavailable"}
             </a>
 
-            <a id="phoneLink" href="#" class="contact-card">
-              Phone loading...
+            <a
+              href={contact?.business_phone
+                ? `tel:${cleanPhoneForLink(contact.business_phone)}`
+                : "#"}
+              class="contact-card"
+            >
+              {contact?.business_phone
+                ? `Call: ${contact.business_phone}`
+                : "Phone unavailable"}
             </a>
 
             <a href="/request-service" class="contact-card">
@@ -93,294 +211,6 @@ const title = "Business Services | NateNate";
         </section>
       </section>
     </main>
-
-    <script>
-      import { createClient } from "@supabase/supabase-js";
-
-      type SiteContact = {
-        id?: number;
-        business_email?: string | null;
-        business_phone?: string | null;
-        updated_at?: string | null;
-      };
-
-      type Service = {
-        id?: number;
-        title?: string | null;
-        service_code?: string | null;
-        short_description?: string | null;
-        description?: string | null;
-        estimate_text?: string | null;
-        image_url?: string | null;
-        is_active?: boolean | null;
-      };
-
-      type Project = {
-        id?: number;
-        title?: string | null;
-        service_code?: string | null;
-        category?: string | null;
-        description?: string | null;
-        image_url?: string | null;
-        project_url?: string | null;
-      };
-
-      const supabaseUrl =
-        import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-
-      const supabaseAnonKey =
-        import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
-        import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      const servicesGrid = document.querySelector(
-        "#servicesGrid"
-      ) as HTMLDivElement | null;
-
-      const projectsGrid = document.querySelector(
-        "#projectsGrid"
-      ) as HTMLDivElement | null;
-
-      const serviceCount = document.querySelector(
-        "#serviceCount"
-      ) as HTMLSpanElement | null;
-
-      const projectCount = document.querySelector(
-        "#projectCount"
-      ) as HTMLSpanElement | null;
-
-      const emailLink = document.querySelector(
-        "#emailLink"
-      ) as HTMLAnchorElement | null;
-
-      const phoneLink = document.querySelector(
-        "#phoneLink"
-      ) as HTMLAnchorElement | null;
-
-      function escapeHTML(
-        value: string | number | boolean | null | undefined
-      ): string {
-        if (value === null || value === undefined || value === "") return "";
-
-        return String(value)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#039;");
-      }
-
-      function cleanPhoneForLink(phone: string | null | undefined): string {
-        if (!phone) return "";
-        return phone.replace(/[^\d+]/g, "");
-      }
-
-      function showGlobalError(message: string): void {
-        console.error(message);
-
-        if (serviceCount) serviceCount.textContent = "Error";
-        if (projectCount) projectCount.textContent = "Error";
-
-        if (servicesGrid) {
-          servicesGrid.innerHTML = `<p class="loading-text">${escapeHTML(
-            message
-          )}</p>`;
-        }
-
-        if (projectsGrid) {
-          projectsGrid.innerHTML =
-            '<p class="loading-text">Portfolio could not load.</p>';
-        }
-
-        if (emailLink) {
-          emailLink.textContent = "Email unavailable";
-          emailLink.href = "#";
-        }
-
-        if (phoneLink) {
-          phoneLink.textContent = "Phone unavailable";
-          phoneLink.href = "#";
-        }
-      }
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        showGlobalError(
-          "Supabase environment variables are missing. Check Netlify environment variables."
-        );
-      } else {
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-        async function loadContact(): Promise<void> {
-          if (!emailLink || !phoneLink) return;
-
-          const { data, error } = await supabase
-            .from("site_contact")
-            .select("*")
-            .not("business_email", "is", null)
-            .order("updated_at", { ascending: false })
-            .limit(1)
-            .maybeSingle<SiteContact>();
-
-          if (error || !data) {
-            console.error("Contact load error:", error);
-            emailLink.textContent = "Email unavailable";
-            emailLink.href = "#";
-            phoneLink.textContent = "Phone unavailable";
-            phoneLink.href = "#";
-            return;
-          }
-
-          const email = data.business_email || "";
-          const phone = data.business_phone || "";
-
-          emailLink.textContent = email ? `Email: ${email}` : "Email unavailable";
-          emailLink.href = email ? `mailto:${email}` : "#";
-
-          phoneLink.textContent = phone ? `Call: ${phone}` : "Phone unavailable";
-          phoneLink.href = phone ? `tel:${cleanPhoneForLink(phone)}` : "#";
-        }
-
-        async function loadServices(): Promise<void> {
-          if (!servicesGrid || !serviceCount) return;
-
-          const { data, error } = await supabase
-            .from("services")
-            .select("*")
-            .eq("is_active", true)
-            .order("id", { ascending: true })
-            .returns<Service[]>();
-
-          if (error) {
-            console.error("Services load error:", error);
-            serviceCount.textContent = "Error";
-            servicesGrid.innerHTML =
-              '<p class="loading-text">Services could not load.</p>';
-            return;
-          }
-
-          if (!data || data.length === 0) {
-            serviceCount.textContent = "0";
-            servicesGrid.innerHTML =
-              '<p class="loading-text">No services have been added yet.</p>';
-            return;
-          }
-
-          serviceCount.textContent = `${data.length} Active`;
-
-          servicesGrid.innerHTML = data
-            .map((service: Service) => {
-              const title = escapeHTML(service.title);
-              const code = escapeHTML(service.service_code);
-              const description = escapeHTML(
-                service.short_description || service.description || ""
-              );
-              const estimate = escapeHTML(service.estimate_text || "");
-              const image = escapeHTML(
-                service.image_url || "/images/default-service.jpg"
-              );
-
-              return `
-                <article class="service-card">
-                  <a href="/request-service?service=${encodeURIComponent(
-                    service.service_code || ""
-                  )}">
-                    <div class="card-image">
-                      <img src="${image}" alt="${title}" />
-                    </div>
-
-                    <div class="card-body">
-                      <div class="card-topline">
-                        <span>${code}</span>
-                      </div>
-
-                      <h3>${title}</h3>
-
-                      ${description ? `<p>${description}</p>` : ""}
-
-                      ${
-                        estimate
-                          ? `<div class="estimate-chip">${estimate}</div>`
-                          : ""
-                      }
-
-                      <div class="card-action">Request Service →</div>
-                    </div>
-                  </a>
-                </article>
-              `;
-            })
-            .join("");
-        }
-
-        async function loadProjects(): Promise<void> {
-          if (!projectsGrid || !projectCount) return;
-
-          const { data, error } = await supabase
-            .from("projects")
-            .select("*")
-            .order("id", { ascending: false })
-            .returns<Project[]>();
-
-          if (error) {
-            console.error("Projects load error:", error);
-            projectCount.textContent = "Error";
-            projectsGrid.innerHTML =
-              '<p class="loading-text">Portfolio could not load.</p>';
-            return;
-          }
-
-          if (!data || data.length === 0) {
-            projectCount.textContent = "0";
-            projectsGrid.innerHTML =
-              '<p class="loading-text">No portfolio projects have been added yet.</p>';
-            return;
-          }
-
-          projectCount.textContent = `${data.length} Projects`;
-
-          projectsGrid.innerHTML = data
-            .map((project: Project) => {
-              const title = escapeHTML(project.title);
-              const code = escapeHTML(project.service_code || "PROJECT");
-              const category = escapeHTML(project.category || "");
-              const description = escapeHTML(project.description || "");
-              const image = escapeHTML(
-                project.image_url || "/images/default-project.jpg"
-              );
-              const projectUrl = escapeHTML(project.project_url || "");
-
-              return `
-                <article class="project-card">
-                  <div class="project-image">
-                    <img src="${image}" alt="${title}" />
-                  </div>
-
-                  <div class="project-body">
-                    <div class="card-topline">
-                      <span>${code}</span>
-                      ${category ? `<span>${category}</span>` : ""}
-                    </div>
-
-                    <h3>${title}</h3>
-
-                    ${description ? `<p>${description}</p>` : ""}
-
-                    ${
-                      projectUrl
-                        ? `<a href="${projectUrl}" target="_blank" rel="noopener">View Project →</a>`
-                        : ""
-                    }
-                  </div>
-                </article>
-              `;
-            })
-            .join("");
-        }
-
-        loadContact();
-        loadServices();
-        loadProjects();
-      }
-    </script>
   </body>
 </html>
 
