@@ -1,48 +1,5 @@
 ---
-import { supabase } from "../lib/supabase.js";
-
 const title = "Business Services | NateNate";
-
-const { data: contactRows, error: contactError } = await supabase
-  .from("site_contact")
-  .select("*")
-  .order("updated_at", { ascending: false })
-  .limit(1);
-
-if (contactError) {
-  console.error("Error loading contact info:", contactError.message);
-}
-
-const contact = contactRows?.[0];
-
-const { data: serviceRows, error: servicesError } = await supabase
-  .from("services")
-  .select("*")
-  .eq("is_active", true)
-  .order("id", { ascending: true });
-
-if (servicesError) {
-  console.error("Error loading services:", servicesError.message);
-}
-
-const services = serviceRows || [];
-
-const { data: projectRows, error: projectsError } = await supabase
-  .from("projects")
-  .select("*")
-  .order("id", { ascending: false });
-
-if (projectsError) {
-  console.error("Error loading projects:", projectsError.message);
-}
-
-const projects = projectRows || [];
-
-function cleanPhoneForLink(phone: string
-) {
-  if (!phone) return "";
-  return phone.replace(/[^\d+]/g, "");
-}
 ---
 
 <html lang="en">
@@ -95,85 +52,22 @@ function cleanPhoneForLink(phone: string
         <section id="services" class="content-section">
           <div class="section-bar">
             <h2>Services</h2>
-            <span>{services.length} Active</span>
+            <span id="serviceCount">Loading</span>
           </div>
 
-          <div class="services-grid">
-            {services.length === 0 ? (
-              <p class="loading-text">No services have been added yet.</p>
-            ) : (
-              services.map((service) => (
-                <article class="service-card">
-                  <a href={`/request-service?service=${service.service_code || ""}`}>
-                    <div class="card-image">
-                      <img
-                        src={service.image_url || "/images/default-service.jpg"}
-                        alt={service.title || "Service"}
-                      />
-                    </div>
-
-                    <div class="card-body">
-                      <div class="card-topline">
-                        <span>{service.service_code || "SERVICE"}</span>
-                      </div>
-
-                      <h3>{service.title}</h3>
-
-                      {(service.short_description || service.description) && (
-                        <p>{service.short_description || service.description}</p>
-                      )}
-
-                      {service.estimate_text && (
-                        <div class="estimate-chip">{service.estimate_text}</div>
-                      )}
-
-                      <div class="card-action">Request Service →</div>
-                    </div>
-                  </a>
-                </article>
-              ))
-            )}
+          <div id="servicesGrid" class="services-grid">
+            <p class="loading-text">Loading services...</p>
           </div>
         </section>
 
         <section id="portfolio" class="content-section">
           <div class="section-bar">
             <h2>Portfolio</h2>
-            <span>{projects.length} Projects</span>
+            <span id="projectCount">Loading</span>
           </div>
 
-          <div class="projects-grid">
-            {projects.length === 0 ? (
-              <p class="loading-text">No portfolio projects have been added yet.</p>
-            ) : (
-              projects.map((project) => (
-                <article class="project-card">
-                  <div class="project-image">
-                    <img
-                      src={project.image_url || "/images/default-project.jpg"}
-                      alt={project.title || "Project"}
-                    />
-                  </div>
-
-                  <div class="project-body">
-                    <div class="card-topline">
-                      <span>{project.service_code || "PROJECT"}</span>
-                      {project.category && <span>{project.category}</span>}
-                    </div>
-
-                    <h3>{project.title}</h3>
-
-                    {project.description && <p>{project.description}</p>}
-
-                    {project.project_url && (
-                      <a href={project.project_url} target="_blank" rel="noopener">
-                        View Project →
-                      </a>
-                    )}
-                  </div>
-                </article>
-              ))
-            )}
+          <div id="projectsGrid" class="projects-grid">
+            <p class="loading-text">Loading portfolio...</p>
           </div>
         </section>
 
@@ -184,24 +78,12 @@ function cleanPhoneForLink(phone: string
           </div>
 
           <div class="contact-grid">
-            <a
-              href={contact?.business_email ? `mailto:${contact.business_email}` : "#"}
-              class="contact-card"
-            >
-              {contact?.business_email
-                ? `Email: ${contact.business_email}`
-                : "Email unavailable"}
+            <a id="emailLink" href="#" class="contact-card">
+              Email loading...
             </a>
 
-            <a
-              href={contact?.business_phone
-                ? `tel:${cleanPhoneForLink(contact.business_phone)}`
-                : "#"}
-              class="contact-card"
-            >
-              {contact?.business_phone
-                ? `Call: ${contact.business_phone}`
-                : "Phone unavailable"}
+            <a id="phoneLink" href="#" class="contact-card">
+              Phone loading...
             </a>
 
             <a href="/request-service" class="contact-card">
@@ -211,6 +93,197 @@ function cleanPhoneForLink(phone: string
         </section>
       </section>
     </main>
+
+    <script type="module">
+      import { supabase } from "../lib/supabase.js";
+
+      const servicesGrid = document.querySelector("#servicesGrid");
+      const projectsGrid = document.querySelector("#projectsGrid");
+      const serviceCount = document.querySelector("#serviceCount");
+      const projectCount = document.querySelector("#projectCount");
+      const emailLink = document.querySelector("#emailLink");
+      const phoneLink = document.querySelector("#phoneLink");
+
+      function escapeHTML(value) {
+        if (value === null || value === undefined || value === "") return "";
+
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function cleanPhoneForLink(phone) {
+        if (!phone) return "";
+        return phone.replace(/[^\d+]/g, "");
+      }
+
+      async function loadContact() {
+        if (!emailLink || !phoneLink) return;
+
+        const { data, error } = await supabase
+          .from("site_contact")
+          .select("*")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error || !data) {
+          console.error("Contact load error:", error);
+          emailLink.textContent = "Email unavailable";
+          emailLink.href = "#";
+          phoneLink.textContent = "Phone unavailable";
+          phoneLink.href = "#";
+          return;
+        }
+
+        const email = data.business_email || "";
+        const phone = data.business_phone || "";
+
+        emailLink.textContent = email ? `Email: ${email}` : "Email unavailable";
+        emailLink.href = email ? `mailto:${email}` : "#";
+
+        phoneLink.textContent = phone ? `Call: ${phone}` : "Phone unavailable";
+        phoneLink.href = phone ? `tel:${cleanPhoneForLink(phone)}` : "#";
+      }
+
+      async function loadServices() {
+        if (!servicesGrid || !serviceCount) return;
+
+        const { data, error } = await supabase
+          .from("services")
+          .select("*")
+          .eq("is_active", true)
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.error("Services load error:", error);
+          serviceCount.textContent = "Error";
+          servicesGrid.innerHTML =
+            '<p class="loading-text">Services could not load.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          serviceCount.textContent = "0";
+          servicesGrid.innerHTML =
+            '<p class="loading-text">No services have been added yet.</p>';
+          return;
+        }
+
+        serviceCount.textContent = `${data.length} Active`;
+
+        servicesGrid.innerHTML = data
+          .map((service) => {
+            const title = escapeHTML(service.title);
+            const code = escapeHTML(service.service_code || "SERVICE");
+            const description = escapeHTML(
+              service.short_description || service.description || ""
+            );
+            const estimate = escapeHTML(service.estimate_text || "");
+            const image = escapeHTML(
+              service.image_url || "/images/default-service.jpg"
+            );
+
+            return `
+              <article class="service-card">
+                <a href="/request-service?service=${encodeURIComponent(
+                  service.service_code || ""
+                )}">
+                  <div class="card-image">
+                    <img src="${image}" alt="${title}" />
+                  </div>
+
+                  <div class="card-body">
+                    <div class="card-topline">
+                      <span>${code}</span>
+                    </div>
+
+                    <h3>${title}</h3>
+
+                    ${description ? `<p>${description}</p>` : ""}
+
+                    ${estimate ? `<div class="estimate-chip">${estimate}</div>` : ""}
+
+                    <div class="card-action">Request Service →</div>
+                  </div>
+                </a>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadProjects() {
+        if (!projectsGrid || !projectCount) return;
+
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("id", { ascending: false });
+
+        if (error) {
+          console.error("Projects load error:", error);
+          projectCount.textContent = "Error";
+          projectsGrid.innerHTML =
+            '<p class="loading-text">Portfolio could not load.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          projectCount.textContent = "0";
+          projectsGrid.innerHTML =
+            '<p class="loading-text">No portfolio projects have been added yet.</p>';
+          return;
+        }
+
+        projectCount.textContent = `${data.length} Projects`;
+
+        projectsGrid.innerHTML = data
+          .map((project) => {
+            const title = escapeHTML(project.title);
+            const code = escapeHTML(project.service_code || "PROJECT");
+            const category = escapeHTML(project.category || "");
+            const description = escapeHTML(project.description || "");
+            const image = escapeHTML(
+              project.image_url || "/images/default-project.jpg"
+            );
+            const projectUrl = escapeHTML(project.project_url || "");
+
+            return `
+              <article class="project-card">
+                <div class="project-image">
+                  <img src="${image}" alt="${title}" />
+                </div>
+
+                <div class="project-body">
+                  <div class="card-topline">
+                    <span>${code}</span>
+                    ${category ? `<span>${category}</span>` : ""}
+                  </div>
+
+                  <h3>${title}</h3>
+
+                  ${description ? `<p>${description}</p>` : ""}
+
+                  ${
+                    projectUrl
+                      ? `<a href="${projectUrl}" target="_blank" rel="noopener">View Project →</a>`
+                      : ""
+                  }
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      loadContact();
+      loadServices();
+      loadProjects();
+    </script>
   </body>
 </html>
 

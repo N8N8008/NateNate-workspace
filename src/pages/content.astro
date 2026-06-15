@@ -1,47 +1,5 @@
 ---
-// Import your local Supabase client configuration
-import { supabase } from "../lib/supabase.js";
-
 const title = "The Collection | Look Up";
-
-// 1. Fetch live "Curiosity Notes" matching the 'section' schema from new-post.astro
-const { data: databaseCuriousRows, error: curiosityError } = await supabase
-  .from("posts")
-  .select("*")
-  .eq("section", "curious") 
-  .eq("published", true)    
-  .order("created_at", { ascending: false });
-
-if (curiosityError) {
-  console.error("Error loading curiosity posts:", curiosityError.message);
-}
-
-// 2. Fetch live "Research & Reports" matching the 'section' schema from new-post.astro
-const { data: databaseResearchRows, error: researchError } = await supabase
-  .from("posts")
-  .select("*")
-  .eq("section", "research") 
-  .eq("published", true)
-  .order("created_at", { ascending: false });
-
-if (researchError) {
-  console.error("Error loading research posts:", researchError.message);
-}
-
-// Explicitly safely map your entries to guarantee markup properties exist
-const curiosityPosts = (databaseCuriousRows || []).map((post: any) => ({
-  title: post.title,
-  description: post.content || post.excerpt || "", 
-  previewText: post.excerpt || post.preview || "Click to read article...",
-  image: post.image_url || ""                      
-}));
-
-const researchPosts = (databaseResearchRows || []).map((post: any) => ({
-  title: post.title,
-  description: post.content || post.excerpt || "",
-  previewText: post.excerpt || post.preview || "Click to read article...",
-  image: post.image_url || ""
-}));
 ---
 
 <html lang="en">
@@ -77,7 +35,6 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         color: inherit;
       }
 
-      /* Top Navigation & Dropdown Styling */
       .top-nav {
         width: min(1120px, 92%);
         margin: 0 auto;
@@ -110,7 +67,6 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         color: var(--accent);
       }
 
-      /* Hover Login Panel Container */
       .login-dropdown-panel {
         position: absolute;
         top: 100%;
@@ -138,6 +94,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         margin: 0 0 4px;
         font-size: 1.2rem;
       }
+
       .login-dropdown-panel .panel-sub {
         font-family: Arial, sans-serif;
         font-size: 0.72rem;
@@ -146,10 +103,12 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         margin-bottom: 16px;
         letter-spacing: 0.5px;
       }
+
       .login-dropdown-panel form {
         display: grid;
         gap: 12px;
       }
+
       .login-dropdown-panel label {
         display: grid;
         gap: 4px;
@@ -159,6 +118,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         text-transform: uppercase;
         color: var(--text);
       }
+
       .login-dropdown-panel input {
         padding: 10px 12px;
         border: 1px solid var(--line);
@@ -167,6 +127,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         font-family: Georgia, serif;
         font-size: 0.9rem;
       }
+
       .login-dropdown-panel button {
         background: var(--accent);
         color: var(--paper);
@@ -180,9 +141,11 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         margin-top: 6px;
         transition: background 0.2s;
       }
+
       .login-dropdown-panel button:hover {
         background: #19273a;
       }
+
       .login-dropdown-panel #dropdown-message {
         margin-top: 10px;
         font-size: 0.75rem;
@@ -295,16 +258,16 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
       .article-track {
         display: flex;
         gap: 24px;
-        overflow-x: scroll; 
+        overflow-x: scroll;
         scroll-snap-type: x mandatory;
         scroll-behavior: smooth;
-        padding: 4px 4px 24px 4px; 
-        scrollbar-width: auto; 
-        scrollbar-color: #b9c1ce var(--soft); 
+        padding: 4px 4px 24px 4px;
+        scrollbar-width: auto;
+        scrollbar-color: #b9c1ce var(--soft);
       }
 
       .article-track::-webkit-scrollbar {
-        height: 10px; 
+        height: 10px;
         display: block;
       }
 
@@ -317,19 +280,19 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
       .article-track::-webkit-scrollbar-thumb {
         background: #b9c1ce;
         border-radius: 999px;
-        border: 2px solid var(--soft); 
+        border: 2px solid var(--soft);
       }
 
       .article-track::-webkit-scrollbar-thumb:hover {
         background: var(--accent);
       }
 
-      .article-preview, .all-list a {
+      .article-preview,
+      .all-list a {
         text-decoration: none;
         cursor: pointer;
       }
 
-      /* Rounded Square Card Styling */
       .article-preview {
         flex: 0 0 220px;
         width: 220px;
@@ -344,8 +307,11 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         justify-content: center;
         align-items: center;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-        transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        transition:
+          border-color 0.2s ease,
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
       }
 
       .article-preview:hover {
@@ -364,6 +330,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         border: 1px solid var(--line);
         flex-shrink: 0;
       }
+
       .article-image-thumbnail img {
         width: 100%;
         height: 100%;
@@ -447,7 +414,13 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         font-size: 0.95rem;
       }
 
-      /* Floating Preview Box */
+      .loading-text {
+        color: var(--muted);
+        font-family: Arial, sans-serif;
+        font-weight: 700;
+        padding: 16px 0;
+      }
+
       #hover-preview {
         position: fixed;
         pointer-events: none;
@@ -463,6 +436,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         line-height: 1.5;
         font-family: Georgia, serif;
       }
+
       #hover-preview .preview-title {
         font-size: 1.2rem;
         font-weight: bold;
@@ -470,9 +444,11 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         color: var(--accent);
         line-height: 1.2;
       }
+
       #hover-preview .preview-desc {
         color: var(--muted);
       }
+
       #hover-preview .preview-hint {
         font-family: Arial, sans-serif;
         font-size: 0.7rem;
@@ -485,7 +461,6 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         padding-top: 8px;
       }
 
-      /* Reader Viewport Modal Overlay */
       .modal-overlay {
         position: fixed;
         top: 0;
@@ -499,14 +474,16 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         align-items: center;
         justify-content: center;
       }
+
       .modal-overlay.is-active {
         display: flex;
       }
+
       .modal-window {
         background: var(--paper);
         border: 1px solid var(--line);
         border-radius: 20px;
-        box-shadow: 0 24px 60px rgba(0,0,0,0.15);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
         width: min(700px, 90%);
         max-height: 85vh;
         display: flex;
@@ -514,16 +491,19 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         overflow: hidden;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       }
+
       .modal-window.is-minimized {
         transform: translateY(35vh) scale(0.8);
         opacity: 0.5;
         pointer-events: none;
       }
+
       .modal-window.is-expanded {
         width: 98vw;
         height: 96vh;
         max-height: 96vh;
       }
+
       .modal-header {
         background: var(--soft);
         padding: 12px 20px;
@@ -532,6 +512,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         align-items: center;
         border-bottom: 1px solid var(--line);
       }
+
       .modal-window-title {
         font-family: Arial, sans-serif;
         font-size: 0.8rem;
@@ -540,10 +521,12 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         letter-spacing: 1px;
         color: var(--accent);
       }
+
       .modal-controls {
         display: flex;
         gap: 8px;
       }
+
       .modal-ctrl-btn {
         background: var(--paper);
         border: 1px solid var(--line);
@@ -557,19 +540,23 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         font-weight: bold;
         transition: background 0.2s;
       }
+
       .modal-ctrl-btn:hover {
         background: var(--accent-soft);
       }
+
       .modal-body {
         padding: 40px;
         overflow-y: auto;
       }
+
       .modal-body h2 {
         margin: 0 0 16px;
         font-size: 2.2rem;
         letter-spacing: -1px;
         line-height: 1.1;
       }
+
       .modal-body .modal-img-wrap {
         width: 100%;
         max-height: 300px;
@@ -578,11 +565,13 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
         margin-bottom: 24px;
         border: 1px solid var(--line);
       }
+
       .modal-body .modal-img-wrap img {
         width: 100%;
         height: 100%;
         object-fit: cover;
       }
+
       .modal-body p {
         font-size: 1.15rem;
         line-height: 1.7;
@@ -603,28 +592,35 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
           width: min(94%, 100%);
           padding: 24px 12px 0;
         }
+
         .page-wrapper {
           width: min(94%, 100%);
           padding: 24px 0 60px;
         }
+
         .section-actions {
           width: 100%;
           flex-wrap: wrap;
         }
+
         .view-all-btn {
           flex: 1;
           text-align: center;
         }
+
         .all-list a {
           grid-template-columns: 1fr;
         }
+
         .tiny-image {
           width: 100%;
           height: 150px;
         }
+
         .modal-body {
           padding: 20px;
         }
+
         .login-dropdown-panel {
           width: calc(100vw - 24px);
           right: -12px;
@@ -637,22 +633,25 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
     <nav class="top-nav">
       <div class="admin-dropdown-wrapper">
         <span class="admin-link">Admin Access ▾</span>
-        
+
         <div class="login-dropdown-panel">
           <h4>Admin Portal</h4>
           <p class="panel-sub">Supabase Authenticator</p>
-          
+
           <form id="dropdownLoginForm">
             <label>
               Email
               <input type="email" id="dd-email" required placeholder="name@example.com" />
             </label>
+
             <label>
               Password
               <input type="password" id="dd-password" required placeholder="••••••••" />
             </label>
+
             <button type="submit">Log In</button>
           </form>
+
           <p id="dropdown-message">Database connectivity online</p>
         </div>
       </div>
@@ -668,12 +667,14 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
       <div class="modal-window" id="modal-window-box">
         <div class="modal-header">
           <div class="modal-window-title">Look Up Viewport</div>
+
           <div class="modal-controls">
             <button class="modal-ctrl-btn" id="modal-min" title="Minimize">─</button>
             <button class="modal-ctrl-btn" id="modal-max" title="Expand">⤢</button>
             <button class="modal-ctrl-btn" id="modal-close" title="Close">✕</button>
           </div>
         </div>
+
         <div class="modal-body">
           <div class="modal-img-wrap" id="modal-img-container"></div>
           <h2 id="modal-title">Title</h2>
@@ -711,35 +712,14 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
 
         <div class="carousel-window">
           <div class="article-track" id="curiosity-track">
-            {curiosityPosts.map((post) => (
-              <a class="article-preview" data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
-                {post.image && (
-                  <div class="article-image-thumbnail">
-                    <img src={post.image} alt={post.title} />
-                  </div>
-                )}
-                <h3>{post.title}</h3>
-              </a>
-            ))}
+            <p class="loading-text">Loading curiosity notes...</p>
           </div>
         </div>
 
         <div class="all-content" id="curiosity-all">
           <h3>All Curiosity Notes</h3>
-          <div class="all-list">
-            {curiosityPosts.map((post) => (
-              <a data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
-                {post.image && (
-                  <div class="tiny-image">
-                    <img src={post.image} alt={post.title} />
-                  </div>
-                )}
-                <div>
-                  <h4>{post.title}</h4>
-                  <p>{post.previewText}</p>
-                </div>
-              </a>
-            ))}
+          <div class="all-list" id="curiosity-list">
+            <p class="loading-text">Loading curiosity notes...</p>
           </div>
         </div>
       </section>
@@ -762,84 +742,223 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
 
         <div class="carousel-window">
           <div class="article-track" id="research-track">
-            {researchPosts.map((post) => (
-              <a class="article-preview" data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
-                {post.image && (
-                  <div class="article-image-thumbnail">
-                    <img src={post.image} alt={post.title} />
-                  </div>
-                )}
-                <h3>{post.title}</h3>
-              </a>
-            ))}
+            <p class="loading-text">Loading research reports...</p>
           </div>
         </div>
 
         <div class="all-content" id="research-all">
           <h3>All Research & Reports</h3>
-          <div class="all-list">
-            {researchPosts.map((post) => (
-              <a data-title={post.title} data-desc={post.description} data-hint={post.previewText} data-img={post.image}>
-                {post.image && (
-                  <div class="tiny-image">
-                    <img src={post.image} alt={post.title} />
-                  </div>
-                )}
-                <div>
-                  <h4>{post.title}</h4>
-                  <p>{post.previewText}</p>
-                </div>
-              </a>
-            ))}
+          <div class="all-list" id="research-list">
+            <p class="loading-text">Loading research reports...</p>
           </div>
         </div>
       </section>
     </main>
 
-    <script>
+    <script type="module">
+      import { supabase } from "../lib/supabase.js";
+
+      const curiosityTrack = document.getElementById("curiosity-track");
+      const curiosityList = document.getElementById("curiosity-list");
+      const researchTrack = document.getElementById("research-track");
+      const researchList = document.getElementById("research-list");
+
+      function escapeHTML(value) {
+        if (value === null || value === undefined || value === "") return "";
+
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function articleCard(post) {
+        const title = escapeHTML(post.title);
+        const description = escapeHTML(post.content || post.excerpt || "");
+        const previewText = escapeHTML(
+          post.excerpt || post.preview || "Click to read article..."
+        );
+        const image = escapeHTML(post.image_url || "");
+
+        return `
+          <a
+            class="article-preview"
+            data-title="${title}"
+            data-desc="${description}"
+            data-hint="${previewText}"
+            data-img="${image}"
+          >
+            ${
+              image
+                ? `<div class="article-image-thumbnail">
+                    <img src="${image}" alt="${title}" />
+                  </div>`
+                : ""
+            }
+            <h3>${title}</h3>
+          </a>
+        `;
+      }
+
+      function articleListItem(post) {
+        const title = escapeHTML(post.title);
+        const description = escapeHTML(post.content || post.excerpt || "");
+        const previewText = escapeHTML(
+          post.excerpt || post.preview || "Click to read article..."
+        );
+        const image = escapeHTML(post.image_url || "");
+
+        return `
+          <a
+            data-title="${title}"
+            data-desc="${description}"
+            data-hint="${previewText}"
+            data-img="${image}"
+          >
+            ${
+              image
+                ? `<div class="tiny-image">
+                    <img src="${image}" alt="${title}" />
+                  </div>`
+                : ""
+            }
+            <div>
+              <h4>${title}</h4>
+              <p>${previewText}</p>
+            </div>
+          </a>
+        `;
+      }
+
+      async function loadPosts() {
+        const { data: curiousPosts, error: curiousError } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("section", "curious")
+          .eq("published", true)
+          .order("created_at", { ascending: false });
+
+        const { data: researchPosts, error: researchError } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("section", "research")
+          .eq("published", true)
+          .order("created_at", { ascending: false });
+
+        if (curiousError) {
+          console.error("Error loading curiosity posts:", curiousError);
+
+          if (curiosityTrack) {
+            curiosityTrack.innerHTML =
+              '<p class="loading-text">Curiosity notes could not load.</p>';
+          }
+
+          if (curiosityList) {
+            curiosityList.innerHTML =
+              '<p class="loading-text">Curiosity notes could not load.</p>';
+          }
+        } else {
+          const curious = curiousPosts || [];
+
+          if (curiosityTrack) {
+            curiosityTrack.innerHTML = curious.length
+              ? curious.map(articleCard).join("")
+              : '<p class="loading-text">No curiosity notes have been added yet.</p>';
+          }
+
+          if (curiosityList) {
+            curiosityList.innerHTML = curious.length
+              ? curious.map(articleListItem).join("")
+              : '<p class="loading-text">No curiosity notes have been added yet.</p>';
+          }
+        }
+
+        if (researchError) {
+          console.error("Error loading research posts:", researchError);
+
+          if (researchTrack) {
+            researchTrack.innerHTML =
+              '<p class="loading-text">Research reports could not load.</p>';
+          }
+
+          if (researchList) {
+            researchList.innerHTML =
+              '<p class="loading-text">Research reports could not load.</p>';
+          }
+        } else {
+          const research = researchPosts || [];
+
+          if (researchTrack) {
+            researchTrack.innerHTML = research.length
+              ? research.map(articleCard).join("")
+              : '<p class="loading-text">No research reports have been added yet.</p>';
+          }
+
+          if (researchList) {
+            researchList.innerHTML = research.length
+              ? research.map(articleListItem).join("")
+              : '<p class="loading-text">No research reports have been added yet.</p>';
+          }
+        }
+
+        setupArticleCards();
+      }
+
       const toggleButtons = document.querySelectorAll("[data-toggle]");
+
       toggleButtons.forEach((button) => {
         button.addEventListener("click", () => {
           const contentId = button.getAttribute("data-toggle");
           if (!contentId) return;
+
           const content = document.getElementById(contentId);
+
           if (content) {
             content.classList.toggle("is-open");
-            button.textContent = content.classList.contains("is-open") ? "Hide List" : "View All";
+            button.textContent = content.classList.contains("is-open")
+              ? "Hide List"
+              : "View All";
           }
         });
       });
 
-      const hoverPreview = document.getElementById("hover-preview") as HTMLDivElement | null;
-      const previewTitle = document.getElementById("p-title") as HTMLDivElement | null;
-      const previewDesc = document.getElementById("p-desc") as HTMLDivElement | null;
+      const hoverPreview = document.getElementById("hover-preview");
+      const previewTitle = document.getElementById("p-title");
+      const previewDesc = document.getElementById("p-desc");
 
-      const modalOverlay = document.getElementById("article-modal") as HTMLDivElement | null;
-      const modalWindowBox = document.getElementById("modal-window-box") as HTMLDivElement | null;
-      const modalTitle = document.getElementById("modal-title") as HTMLHeadingElement | null;
-      const modalText = document.getElementById("modal-text") as HTMLParagraphElement | null;
-      const modalImgContainer = document.getElementById("modal-img-container") as HTMLDivElement | null;
+      const modalOverlay = document.getElementById("article-modal");
+      const modalWindowBox = document.getElementById("modal-window-box");
+      const modalTitle = document.getElementById("modal-title");
+      const modalText = document.getElementById("modal-text");
+      const modalImgContainer = document.getElementById("modal-img-container");
 
-      const ctrlMin = document.getElementById("modal-min") as HTMLButtonElement | null;
-      const ctrlMax = document.getElementById("modal-max") as HTMLButtonElement | null;
-      const ctrlClose = document.getElementById("modal-close") as HTMLButtonElement | null;
-
-      setupArticleCards();
+      const ctrlMin = document.getElementById("modal-min");
+      const ctrlMax = document.getElementById("modal-max");
+      const ctrlClose = document.getElementById("modal-close");
 
       const observer = new MutationObserver(() => setupArticleCards());
-      document.querySelectorAll(".all-content").forEach(target => {
-        observer.observe(target, { attributes: true, attributeFilter: ['class'] });
+
+      document.querySelectorAll(".all-content").forEach((target) => {
+        observer.observe(target, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
       });
 
       function setupArticleCards() {
         const articleCards = document.querySelectorAll(".article-preview, .all-list a");
+
         articleCards.forEach((card) => {
-          if (card.hasAttribute('data-listeners-added')) return;
-          card.setAttribute('data-listeners-added', 'true');
+          if (card.hasAttribute("data-listeners-added")) return;
+
+          card.setAttribute("data-listeners-added", "true");
 
           card.addEventListener("mouseenter", () => {
             const title = card.getAttribute("data-title") || "";
             const hint = card.getAttribute("data-hint") || "";
+
             if (previewTitle && previewDesc && hoverPreview) {
               previewTitle.textContent = title;
               previewDesc.textContent = hint;
@@ -847,11 +966,10 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
             }
           });
 
-          card.addEventListener("mousemove", (e: Event) => {
-            const mouseEvent = e as MouseEvent;
+          card.addEventListener("mousemove", (e) => {
             if (hoverPreview) {
-              hoverPreview.style.left = (mouseEvent.clientX + 20) + "px";
-              hoverPreview.style.top = (mouseEvent.clientY + 20) + "px";
+              hoverPreview.style.left = e.clientX + 20 + "px";
+              hoverPreview.style.top = e.clientY + 20 + "px";
             }
           });
 
@@ -861,6 +979,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
 
           card.addEventListener("click", (e) => {
             e.preventDefault();
+
             if (hoverPreview) hoverPreview.style.display = "none";
 
             const title = card.getAttribute("data-title") || "";
@@ -882,6 +1001,7 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
               } else {
                 modalImgContainer.style.display = "none";
               }
+
               modalOverlay.classList.add("is-active");
             }
           });
@@ -889,62 +1009,71 @@ const researchPosts = (databaseResearchRows || []).map((post: any) => ({
       }
 
       if (ctrlClose && modalOverlay) {
-        ctrlClose.addEventListener("click", () => modalOverlay.classList.remove("is-active"));
+        ctrlClose.addEventListener("click", () => {
+          modalOverlay.classList.remove("is-active");
+        });
       }
+
       if (ctrlMax && modalWindowBox) {
         ctrlMax.addEventListener("click", () => {
           modalWindowBox.classList.remove("is-minimized");
           modalWindowBox.classList.toggle("is-expanded");
-          ctrlMax.textContent = modalWindowBox.classList.contains("is-expanded") ? "⤭" : "⤢";
+
+          if (ctrlMax) {
+            ctrlMax.textContent = modalWindowBox.classList.contains("is-expanded")
+              ? "⤭"
+              : "⤢";
+          }
         });
       }
+
       if (ctrlMin && modalWindowBox) {
         ctrlMin.addEventListener("click", () => {
           modalWindowBox.classList.remove("is-expanded");
           modalWindowBox.classList.toggle("is-minimized");
+
           if (ctrlMax) ctrlMax.textContent = "⤢";
         });
       }
+
       if (modalOverlay) {
         modalOverlay.addEventListener("click", (e) => {
-          if (e.target === modalOverlay) modalOverlay.classList.remove("is-active");
+          if (e.target === modalOverlay) {
+            modalOverlay.classList.remove("is-active");
+          }
         });
       }
 
-      // Restored Dropdown Authenticator
-      const ddForm = document.getElementById("dropdownLoginForm") as HTMLFormElement | null;
-      const ddMessage = document.getElementById("dropdown-message") as HTMLParagraphElement | null;
-      const emailInput = document.getElementById("dd-email") as HTMLInputElement | null;
-      const passwordInput = document.getElementById("dd-password") as HTMLInputElement | null;
+      const ddForm = document.getElementById("dropdownLoginForm");
+      const ddMessage = document.getElementById("dropdown-message");
+      const emailInput = document.getElementById("dd-email");
+      const passwordInput = document.getElementById("dd-password");
 
       if (ddForm && ddMessage && emailInput && passwordInput) {
         ddForm.addEventListener("submit", async (e) => {
           e.preventDefault();
+
           ddMessage.style.color = "var(--accent)";
           ddMessage.textContent = "Connecting to client profile...";
 
-          try {
-            const { supabase } = await import("../lib/supabase.js");
-            const { error } = await supabase.auth.signInWithPassword({
-              email: emailInput.value.trim(),
-              password: passwordInput.value,
-            });
+          const { error } = await supabase.auth.signInWithPassword({
+            email: emailInput.value.trim(),
+            password: passwordInput.value,
+          });
 
-            if (error) {
-              ddMessage.style.color = "#a63a3a";
-              ddMessage.textContent = "Error: " + error.message;
-              return;
-            }
-
-            ddMessage.style.color = "#2e5630";
-            ddMessage.textContent = "Success! Forwarding redirection...";
-            window.location.href = "/admin/new-post";
-          } catch(err) {
+          if (error) {
             ddMessage.style.color = "#a63a3a";
-            ddMessage.textContent = "Supabase initialization path error.";
+            ddMessage.textContent = "Error: " + error.message;
+            return;
           }
+
+          ddMessage.style.color = "#2e5630";
+          ddMessage.textContent = "Success! Forwarding redirection...";
+          window.location.href = "/admin/new-post";
         });
       }
+
+      loadPosts();
     </script>
   </body>
 </html>
