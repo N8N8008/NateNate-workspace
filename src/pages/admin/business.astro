@@ -1,0 +1,804 @@
+---
+const title = "Business Admin | NateNate";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+  </head>
+
+  <body>
+    <main class="admin-page">
+      <section class="admin-header">
+        <div>
+          <p class="tag">Business Admin</p>
+          <h1>Edit Business Page</h1>
+        </div>
+
+        <div class="header-actions">
+          <a href="/admin/dashboard">Admin Dashboard</a>
+          <a href="/business">View Business Page</a>
+          <button id="logoutBtn">Log Out</button>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2>Contact Info</h2>
+
+        <form id="contactForm" class="form-grid">
+          <label>
+            Business Email
+            <input id="businessEmail" type="email" placeholder="you@example.com" />
+          </label>
+
+          <label>
+            Business Phone
+            <input id="businessPhone" type="text" placeholder="321-555-1234" />
+          </label>
+
+          <button type="submit">Save Contact</button>
+        </form>
+
+        <p id="contactMessage" class="message"></p>
+      </section>
+
+      <section class="admin-card">
+        <h2>Services</h2>
+
+        <form id="serviceForm" class="form-grid">
+          <input id="serviceId" type="hidden" />
+
+          <label>
+            Service Code
+            <input id="serviceCode" type="text" placeholder="WEB-001" required />
+          </label>
+
+          <label>
+            Service Title
+            <input id="serviceTitle" type="text" placeholder="Website Design" required />
+          </label>
+
+          <label class="full">
+            Short Description
+            <textarea
+              id="serviceShortDescription"
+              rows="3"
+              placeholder="Short description shown on the business page card."
+            ></textarea>
+          </label>
+
+          <label class="full">
+            Full Description
+            <textarea
+              id="serviceDescription"
+              rows="5"
+              placeholder="Longer service description."
+            ></textarea>
+          </label>
+
+          <label class="full">
+            Estimate Text
+            <input
+              id="serviceEstimate"
+              type="text"
+              placeholder="Starting around $75 depending on project size."
+            />
+          </label>
+
+          <label class="full">
+            Image URL
+            <input
+              id="serviceImage"
+              type="text"
+              placeholder="/images/default-service.jpg"
+            />
+          </label>
+
+          <label class="checkbox-label full">
+            <input id="serviceActive" type="checkbox" checked />
+            Show this service on the business page
+          </label>
+
+          <div class="button-row full">
+            <button type="submit">Save Service</button>
+            <button type="button" id="clearServiceBtn" class="secondary">
+              Clear Form
+            </button>
+          </div>
+        </form>
+
+        <p id="serviceMessage" class="message"></p>
+
+        <div id="servicesList" class="item-list">
+          <p class="loading-text">Loading services...</p>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <h2>Portfolio Projects</h2>
+
+        <form id="projectForm" class="form-grid">
+          <input id="projectId" type="hidden" />
+
+          <label>
+            Project Title
+            <input id="projectTitle" type="text" placeholder="Inventory Tracker" required />
+          </label>
+
+          <label>
+            Service Code
+            <input id="projectCode" type="text" placeholder="WEB-001" />
+          </label>
+
+          <label>
+            Category
+            <input id="projectCategory" type="text" placeholder="Website, Spreadsheet, Dashboard" />
+          </label>
+
+          <label class="full">
+            Description
+            <textarea
+              id="projectDescription"
+              rows="4"
+              placeholder="Describe this portfolio project."
+            ></textarea>
+          </label>
+
+          <label class="full">
+            Image URL
+            <input
+              id="projectImage"
+              type="text"
+              placeholder="/images/default-project.jpg"
+            />
+          </label>
+
+          <label class="full">
+            Project URL
+            <input
+              id="projectUrl"
+              type="text"
+              placeholder="https://example.com"
+            />
+          </label>
+
+          <div class="button-row full">
+            <button type="submit">Save Project</button>
+            <button type="button" id="clearProjectBtn" class="secondary">
+              Clear Form
+            </button>
+          </div>
+        </form>
+
+        <p id="projectMessage" class="message"></p>
+
+        <div id="projectsList" class="item-list">
+          <p class="loading-text">Loading projects...</p>
+        </div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { supabase } from "../../lib/supabase.js";
+
+      const logoutBtn = document.querySelector("#logoutBtn");
+
+      const contactForm = document.querySelector("#contactForm");
+      const businessEmail = document.querySelector("#businessEmail");
+      const businessPhone = document.querySelector("#businessPhone");
+      const contactMessage = document.querySelector("#contactMessage");
+
+      const serviceForm = document.querySelector("#serviceForm");
+      const serviceId = document.querySelector("#serviceId");
+      const serviceCode = document.querySelector("#serviceCode");
+      const serviceTitle = document.querySelector("#serviceTitle");
+      const serviceShortDescription = document.querySelector("#serviceShortDescription");
+      const serviceDescription = document.querySelector("#serviceDescription");
+      const serviceEstimate = document.querySelector("#serviceEstimate");
+      const serviceImage = document.querySelector("#serviceImage");
+      const serviceActive = document.querySelector("#serviceActive");
+      const serviceMessage = document.querySelector("#serviceMessage");
+      const servicesList = document.querySelector("#servicesList");
+      const clearServiceBtn = document.querySelector("#clearServiceBtn");
+
+      const projectForm = document.querySelector("#projectForm");
+      const projectId = document.querySelector("#projectId");
+      const projectTitle = document.querySelector("#projectTitle");
+      const projectCode = document.querySelector("#projectCode");
+      const projectCategory = document.querySelector("#projectCategory");
+      const projectDescription = document.querySelector("#projectDescription");
+      const projectImage = document.querySelector("#projectImage");
+      const projectUrl = document.querySelector("#projectUrl");
+      const projectMessage = document.querySelector("#projectMessage");
+      const projectsList = document.querySelector("#projectsList");
+      const clearProjectBtn = document.querySelector("#clearProjectBtn");
+
+      function escapeHTML(value) {
+        if (!value) return "";
+
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      async function protectPage() {
+        const { data } = await supabase.auth.getSession();
+
+        if (!data.session) {
+          window.location.href = "/admin/login";
+        }
+      }
+
+      async function loadContact() {
+        const { data, error } = await supabase
+          .from("site_contact")
+          .select("*")
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error(error);
+          contactMessage.textContent = "Contact info could not load.";
+          return;
+        }
+
+        if (data) {
+          businessEmail.value = data.business_email || "";
+          businessPhone.value = data.business_phone || "";
+        }
+      }
+
+      contactForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        contactMessage.textContent = "Saving contact info...";
+
+        const contactData = {
+          id: 1,
+          business_email: businessEmail.value.trim(),
+          business_phone: businessPhone.value.trim(),
+        };
+
+        const { error } = await supabase
+          .from("site_contact")
+          .upsert(contactData, { onConflict: "id" });
+
+        if (error) {
+          console.error(error);
+          contactMessage.textContent = "Contact info could not save.";
+          return;
+        }
+
+        contactMessage.textContent = "Contact info saved.";
+      });
+
+      async function loadServices() {
+        const { data, error } = await supabase
+          .from("services")
+          .select("*")
+          .order("id", { ascending: true });
+
+        if (error) {
+          console.error(error);
+          servicesList.innerHTML =
+            '<p class="loading-text">Services could not load.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          servicesList.innerHTML =
+            '<p class="loading-text">No services added yet.</p>';
+          return;
+        }
+
+        servicesList.innerHTML = data
+          .map((service) => {
+            return `
+              <article class="admin-item">
+                <div>
+                  <span>${escapeHTML(service.service_code)}</span>
+                  <h3>${escapeHTML(service.title)}</h3>
+                  <p>${escapeHTML(service.short_description || "")}</p>
+                  <p><strong>Estimate:</strong> ${escapeHTML(service.estimate_text || "No estimate added")}</p>
+                  <p class="status">${service.is_active ? "Active" : "Hidden"}</p>
+                </div>
+
+                <div class="item-actions">
+                  <button
+                    type="button"
+                    class="edit-service"
+                    data-id="${service.id}"
+                    data-code="${escapeHTML(service.service_code)}"
+                    data-title="${escapeHTML(service.title)}"
+                    data-short="${escapeHTML(service.short_description || "")}"
+                    data-description="${escapeHTML(service.description || "")}"
+                    data-estimate="${escapeHTML(service.estimate_text || "")}"
+                    data-image="${escapeHTML(service.image_url || "")}"
+                    data-active="${service.is_active}"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    class="delete-service danger"
+                    data-id="${service.id}"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll(".edit-service").forEach((button) => {
+          button.addEventListener("click", () => {
+            serviceId.value = button.dataset.id;
+            serviceCode.value = button.dataset.code;
+            serviceTitle.value = button.dataset.title;
+            serviceShortDescription.value = button.dataset.short;
+            serviceDescription.value = button.dataset.description;
+            serviceEstimate.value = button.dataset.estimate;
+            serviceImage.value = button.dataset.image;
+            serviceActive.checked = button.dataset.active === "true";
+
+            serviceMessage.textContent = "Editing selected service.";
+            serviceForm.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
+        document.querySelectorAll(".delete-service").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const confirmDelete = confirm("Delete this service?");
+            if (!confirmDelete) return;
+
+            const { error } = await supabase
+              .from("services")
+              .delete()
+              .eq("id", button.dataset.id);
+
+            if (error) {
+              console.error(error);
+              serviceMessage.textContent = "Service could not delete.";
+              return;
+            }
+
+            serviceMessage.textContent = "Service deleted.";
+            await loadServices();
+          });
+        });
+      }
+
+      serviceForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        serviceMessage.textContent = "Saving service...";
+
+        const serviceData = {
+          service_code: serviceCode.value.trim(),
+          title: serviceTitle.value.trim(),
+          short_description: serviceShortDescription.value.trim(),
+          description: serviceDescription.value.trim(),
+          estimate_text: serviceEstimate.value.trim(),
+          image_url: serviceImage.value.trim() || "/images/default-service.jpg",
+          is_active: serviceActive.checked,
+        };
+
+        let response;
+
+        if (serviceId.value) {
+          response = await supabase
+            .from("services")
+            .update(serviceData)
+            .eq("id", serviceId.value);
+        } else {
+          response = await supabase.from("services").insert(serviceData);
+        }
+
+        if (response.error) {
+          console.error(response.error);
+          serviceMessage.textContent = "Service could not save.";
+          return;
+        }
+
+        serviceMessage.textContent = "Service saved.";
+        clearServiceForm();
+        await loadServices();
+      });
+
+      function clearServiceForm() {
+        serviceId.value = "";
+        serviceCode.value = "";
+        serviceTitle.value = "";
+        serviceShortDescription.value = "";
+        serviceDescription.value = "";
+        serviceEstimate.value = "";
+        serviceImage.value = "";
+        serviceActive.checked = true;
+      }
+
+      clearServiceBtn.addEventListener("click", clearServiceForm);
+
+      async function loadProjects() {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("id", { ascending: false });
+
+        if (error) {
+          console.error(error);
+          projectsList.innerHTML =
+            '<p class="loading-text">Projects could not load.</p>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          projectsList.innerHTML =
+            '<p class="loading-text">No projects added yet.</p>';
+          return;
+        }
+
+        projectsList.innerHTML = data
+          .map((project) => {
+            return `
+              <article class="admin-item">
+                <div>
+                  <span>${escapeHTML(project.service_code || "PROJECT")}</span>
+                  <h3>${escapeHTML(project.title)}</h3>
+                  <p>${escapeHTML(project.category || "")}</p>
+                  <p>${escapeHTML(project.description || "")}</p>
+                </div>
+
+                <div class="item-actions">
+                  <button
+                    type="button"
+                    class="edit-project"
+                    data-id="${project.id}"
+                    data-title="${escapeHTML(project.title)}"
+                    data-code="${escapeHTML(project.service_code || "")}"
+                    data-category="${escapeHTML(project.category || "")}"
+                    data-description="${escapeHTML(project.description || "")}"
+                    data-image="${escapeHTML(project.image_url || "")}"
+                    data-url="${escapeHTML(project.project_url || "")}"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    class="delete-project danger"
+                    data-id="${project.id}"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll(".edit-project").forEach((button) => {
+          button.addEventListener("click", () => {
+            projectId.value = button.dataset.id;
+            projectTitle.value = button.dataset.title;
+            projectCode.value = button.dataset.code;
+            projectCategory.value = button.dataset.category;
+            projectDescription.value = button.dataset.description;
+            projectImage.value = button.dataset.image;
+            projectUrl.value = button.dataset.url;
+
+            projectMessage.textContent = "Editing selected project.";
+            projectForm.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
+        document.querySelectorAll(".delete-project").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const confirmDelete = confirm("Delete this project?");
+            if (!confirmDelete) return;
+
+            const { error } = await supabase
+              .from("projects")
+              .delete()
+              .eq("id", button.dataset.id);
+
+            if (error) {
+              console.error(error);
+              projectMessage.textContent = "Project could not delete.";
+              return;
+            }
+
+            projectMessage.textContent = "Project deleted.";
+            await loadProjects();
+          });
+        });
+      }
+
+      projectForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        projectMessage.textContent = "Saving project...";
+
+        const projectData = {
+          title: projectTitle.value.trim(),
+          service_code: projectCode.value.trim(),
+          category: projectCategory.value.trim(),
+          description: projectDescription.value.trim(),
+          image_url: projectImage.value.trim() || "/images/default-project.jpg",
+          project_url: projectUrl.value.trim(),
+        };
+
+        let response;
+
+        if (projectId.value) {
+          response = await supabase
+            .from("projects")
+            .update(projectData)
+            .eq("id", projectId.value);
+        } else {
+          response = await supabase.from("projects").insert(projectData);
+        }
+
+        if (response.error) {
+          console.error(response.error);
+          projectMessage.textContent = "Project could not save.";
+          return;
+        }
+
+        projectMessage.textContent = "Project saved.";
+        clearProjectForm();
+        await loadProjects();
+      });
+
+      function clearProjectForm() {
+        projectId.value = "";
+        projectTitle.value = "";
+        projectCode.value = "";
+        projectCategory.value = "";
+        projectDescription.value = "";
+        projectImage.value = "";
+        projectUrl.value = "";
+      }
+
+      clearProjectBtn.addEventListener("click", clearProjectForm);
+
+      logoutBtn.addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.href = "/admin/login";
+      });
+
+      await protectPage();
+      await loadContact();
+      await loadServices();
+      await loadProjects();
+    </script>
+  </body>
+</html>
+
+<style>
+  :global(body) {
+    margin: 0;
+    font-family:
+      Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f6f8;
+    color: #101418;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  .admin-page {
+    min-height: 100vh;
+    padding: 2rem 8%;
+  }
+
+  .admin-header,
+  .admin-card {
+    border-radius: 1.4rem;
+    background: #ffffff;
+    border: 1px solid rgba(16, 20, 24, 0.08);
+    box-shadow: 0 18px 45px rgba(16, 20, 24, 0.08);
+  }
+
+  .admin-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 2rem;
+    background:
+      linear-gradient(135deg, rgba(17, 24, 39, 0.96), rgba(31, 41, 55, 0.92)),
+      #111827;
+    color: white;
+  }
+
+  .tag {
+    margin: 0 0 0.7rem;
+    color: #7dd3c7;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin-top: 0;
+  }
+
+  h1 {
+    margin-bottom: 0;
+    font-size: clamp(2.4rem, 6vw, 4.8rem);
+    line-height: 0.95;
+    letter-spacing: -0.07em;
+  }
+
+  h2 {
+    margin-bottom: 1.2rem;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    letter-spacing: -0.055em;
+  }
+
+  .header-actions {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .header-actions a,
+  .header-actions button,
+  form button,
+  .item-actions button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.85rem 1rem;
+    background: #7dd3c7;
+    color: #111827;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .header-actions a:nth-child(1),
+  .header-actions button {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+  }
+
+  .admin-card {
+    margin-bottom: 1.5rem;
+    padding: 2rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  label {
+    display: grid;
+    gap: 0.45rem;
+    color: #101418;
+    font-weight: 900;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    border: 1px solid rgba(16, 20, 24, 0.12);
+    border-radius: 0.95rem;
+    padding: 0.9rem 1rem;
+    font: inherit;
+    background: #f8fafc;
+    color: #101418;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .checkbox-label input {
+    width: auto;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+
+  form button.secondary {
+    background: #111827;
+    color: white;
+  }
+
+  .message,
+  .loading-text {
+    margin-top: 1rem;
+    color: #5f6b7a;
+    font-weight: 800;
+  }
+
+  .item-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .admin-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.2rem;
+    border-radius: 1rem;
+    background: #f8fafc;
+    border: 1px solid rgba(16, 20, 24, 0.08);
+  }
+
+  .admin-item span {
+    display: inline-block;
+    margin-bottom: 0.45rem;
+    color: #0f766e;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .admin-item h3 {
+    margin-bottom: 0.4rem;
+  }
+
+  .admin-item p {
+    margin-bottom: 0.35rem;
+    color: #5f6b7a;
+    line-height: 1.5;
+  }
+
+  .admin-item .status {
+    color: #101418;
+    font-weight: 900;
+  }
+
+  .item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .item-actions .danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  @media (max-width: 850px) {
+    .admin-page {
+      padding: 1rem;
+    }
+
+    .admin-header,
+    .form-grid,
+    .admin-item {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
