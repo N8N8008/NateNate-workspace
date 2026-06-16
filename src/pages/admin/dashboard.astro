@@ -34,6 +34,7 @@ const title = "Admin Dashboard | Look Up";
           <a href="/content">Public Content</a>
           <a href="/business">Business Page</a>
           <a href="/admin/login">Login Page</a>
+          <button id="logout-btn" class="logout-button">Log Out</button>
         </div>
       </aside>
 
@@ -481,7 +482,14 @@ const title = "Admin Dashboard | Look Up";
           requestsResult,
         ] = await Promise.all([
           supabase.from("posts").select("*").order("created_at", { ascending: false }),
-          supabase.from("site_contact").select("*").limit(1).maybeSingle(),
+
+          supabase
+            .from("site_contact")
+            .select("*")
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+
           supabase.from("services").select("*").order("id", { ascending: true }),
           supabase.from("projects").select("*").order("created_at", { ascending: false }),
           supabase.from("service_requests").select("*").order("created_at", { ascending: false }),
@@ -650,40 +658,38 @@ const title = "Admin Dashboard | Look Up";
         }
 
         requestsTableBody.innerHTML = requests
-          .map(
-            (request) => {
-              const currentStatus = request.status || "new";
+          .map((request) => {
+            const currentStatus = request.status || "new";
 
-              return `
-                <tr>
-                  <td class="bold-cell">${escapeHTML(request.customer_name || "Customer")}</td>
-                  <td>${escapeHTML(request.customer_email || "")}</td>
-                  <td><code>${escapeHTML(request.service_code || "")}</code></td>
-                  <td>
-                    <select class="request-status" data-id="${request.id}">
-                      <option value="new" ${currentStatus === "new" ? "selected" : ""}>New</option>
-                      <option value="contacted" ${currentStatus === "contacted" ? "selected" : ""}>Contacted</option>
-                      <option value="in_progress" ${currentStatus === "in_progress" ? "selected" : ""}>In Progress</option>
-                      <option value="completed" ${currentStatus === "completed" ? "selected" : ""}>Completed</option>
-                      <option value="closed" ${currentStatus === "closed" ? "selected" : ""}>Closed</option>
-                    </select>
-                  </td>
-                  <td class="request-message">${escapeHTML(request.project_details || "")}</td>
-                  <td>
-                    <textarea class="request-notes" data-id="${request.id}">${escapeHTML(request.admin_notes || "")}</textarea>
-                  </td>
-                  <td class="actions-cell">
-                    <button class="btn-primary small-btn" data-action="save-request" data-type="request" data-id="${request.id}">
-                      Save
-                    </button>
-                    <button class="btn-delete" data-action="delete" data-type="request" data-id="${request.id}">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              `;
-            }
-          )
+            return `
+              <tr>
+                <td class="bold-cell">${escapeHTML(request.customer_name || "Customer")}</td>
+                <td>${escapeHTML(request.customer_email || "")}</td>
+                <td><code>${escapeHTML(request.service_code || "")}</code></td>
+                <td>
+                  <select class="request-status" data-id="${request.id}">
+                    <option value="new" ${currentStatus === "new" ? "selected" : ""}>New</option>
+                    <option value="contacted" ${currentStatus === "contacted" ? "selected" : ""}>Contacted</option>
+                    <option value="in_progress" ${currentStatus === "in_progress" ? "selected" : ""}>In Progress</option>
+                    <option value="completed" ${currentStatus === "completed" ? "selected" : ""}>Completed</option>
+                    <option value="closed" ${currentStatus === "closed" ? "selected" : ""}>Closed</option>
+                  </select>
+                </td>
+                <td class="request-message">${escapeHTML(request.project_details || "")}</td>
+                <td>
+                  <textarea class="request-notes" data-id="${request.id}">${escapeHTML(request.admin_notes || "")}</textarea>
+                </td>
+                <td class="actions-cell">
+                  <button class="btn-primary small-btn" data-action="save-request" data-type="request" data-id="${request.id}">
+                    Save
+                  </button>
+                  <button class="btn-delete" data-action="delete" data-type="request" data-id="${request.id}">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            `;
+          })
           .join("");
       }
 
@@ -748,10 +754,9 @@ const title = "Admin Dashboard | Look Up";
       document.getElementById("contactForm").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const id = document.getElementById("contact-id").value || 1;
+        const id = document.getElementById("contact-id").value;
 
         const payload = {
-          id,
           business_name: document.getElementById("business-name").value.trim(),
           business_location: document.getElementById("business-location").value.trim(),
           business_email: document.getElementById("business-email").value.trim(),
@@ -759,11 +764,12 @@ const title = "Admin Dashboard | Look Up";
           facebook_url: document.getElementById("facebook-url").value.trim(),
           instagram_url: document.getElementById("instagram-url").value.trim(),
           website_url: document.getElementById("website-url").value.trim(),
+          updated_at: new Date().toISOString(),
         };
 
-        const result = await supabase
-          .from("site_contact")
-          .upsert(payload, { onConflict: "id" });
+        const result = id
+          ? await supabase.from("site_contact").update(payload).eq("id", id)
+          : await supabase.from("site_contact").insert([payload]);
 
         if (result.error) {
           showStatus(result.error.message, true);
@@ -787,6 +793,7 @@ const title = "Admin Dashboard | Look Up";
           estimate_text: document.getElementById("service-estimate").value.trim(),
           image_url: document.getElementById("service-image").value.trim() || null,
           is_active: document.getElementById("service-active").checked,
+          updated_at: new Date().toISOString(),
         };
 
         const result = id
@@ -816,6 +823,7 @@ const title = "Admin Dashboard | Look Up";
           image_url: document.getElementById("project-image").value.trim() || null,
           project_url: document.getElementById("project-url").value.trim() || null,
           is_featured: document.getElementById("project-featured").checked,
+          updated_at: new Date().toISOString(),
         };
 
         const result = id
@@ -943,6 +951,11 @@ const title = "Admin Dashboard | Look Up";
         }
       });
 
+      document.getElementById("logout-btn")?.addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        window.location.href = "/admin/login";
+      });
+
       document.getElementById("clear-post-btn").style.display = "none";
       document.getElementById("clear-service-btn").style.display = "none";
       document.getElementById("clear-project-btn").style.display = "none";
@@ -1035,7 +1048,8 @@ const title = "Admin Dashboard | Look Up";
   }
 
   .side-nav a,
-  .sidebar-links a {
+  .sidebar-links a,
+  .logout-button {
     text-decoration: none;
     color: white;
     padding: 11px 13px;
@@ -1043,11 +1057,23 @@ const title = "Admin Dashboard | Look Up";
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.08);
     font-weight: 700;
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
   }
 
   .side-nav a:hover,
   .sidebar-links a:hover {
     background: rgba(255, 255, 255, 0.14);
+  }
+
+  .logout-button {
+    width: 100%;
+    background: rgba(159, 45, 45, 0.8);
+  }
+
+  .logout-button:hover {
+    background: rgba(159, 45, 45, 1);
   }
 
   .sidebar-links {
