@@ -80,11 +80,8 @@ const projectsList = allProjects || [];
         --accent-dark: #16243a;
         --accent-soft: #e7ecf3;
         --danger: #a63a3a;
-        --danger-soft: #f9dddd;
         --success: #2e5630;
-        --success-soft: #e2f2e3;
         --teal: #0f766e;
-        --teal-soft: #e6fffb;
       }
 
       * {
@@ -125,7 +122,8 @@ const projectsList = allProjects || [];
         margin-bottom: 20px;
       }
 
-      .back-links {
+      .back-links,
+      .quick-nav {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
@@ -171,9 +169,6 @@ const projectsList = allProjects || [];
       }
 
       .quick-nav {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
         padding: 14px;
         margin: 22px 0 32px;
         border-radius: 14px;
@@ -306,10 +301,6 @@ const projectsList = allProjects || [];
         color: white;
       }
 
-      .btn-primary:hover {
-        box-shadow: 0 10px 24px rgba(38, 59, 89, 0.18);
-      }
-
       .btn-secondary {
         background: var(--line);
         color: var(--text);
@@ -404,12 +395,6 @@ const projectsList = allProjects || [];
         overflow-wrap: anywhere;
         color: var(--muted);
         font-size: 0.85rem;
-      }
-
-      hr {
-        border: 0;
-        border-top: 1px solid var(--line);
-        margin: 34px 0;
       }
 
       @media (max-width: 850px) {
@@ -582,6 +567,7 @@ const projectsList = allProjects || [];
                     >
                       Edit
                     </button>
+
                     <button type="button" class="btn-delete post-delete-btn" data-id={attr(post.id)}>
                       Delete
                     </button>
@@ -653,14 +639,29 @@ const projectsList = allProjects || [];
 
             <label>
               Service Code
-              <input type="text" id="service-code" required placeholder="WEBSITE" />
-              <span class="small-note">Short label. Example: WEBSITE, INVOICE, DATA, TRANSCRIBE</span>
+              <input type="text" id="service-code" required placeholder="WEB-01" />
+              <span class="small-note">
+                This connects projects to services. Example: WEB-01, DATA-01, SHEET-01
+              </span>
             </label>
           </div>
 
           <label>
             Service Image URL
             <input type="url" id="service-image-url" placeholder="https://..." />
+          </label>
+
+          <label>
+            Estimate / Starting Price
+            <input
+              type="text"
+              id="service-estimate-text"
+              placeholder="Starting at $25"
+            />
+            <span class="small-note">
+              This shows in the price section and price pop-up on your business page.
+              Example: Starting at $25, Starting at $15/hr, or Starting at $35 • Parts not included
+            </span>
           </label>
 
           <label>
@@ -689,14 +690,16 @@ const projectsList = allProjects || [];
               <th>Service</th>
               <th>Code</th>
               <th>Status</th>
+              <th>Price</th>
               <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {servicesList.length === 0 ? (
               <tr>
-                <td colspan="5" style="text-align: center; color: var(--muted);">
+                <td colspan="6" style="text-align: center; color: var(--muted);">
                   No services found.
                 </td>
               </tr>
@@ -706,7 +709,9 @@ const projectsList = allProjects || [];
                   <td data-label="Service" style="font-weight: bold;">{service.title}</td>
                   <td data-label="Code"><code>{service.service_code}</code></td>
                   <td data-label="Status">{service.is_active ? "🟢 Active" : "⚪ Hidden"}</td>
+                  <td data-label="Price" class="mini-preview">{service.estimate_text || "No price set"}</td>
                   <td data-label="Description" class="mini-preview">{service.description}</td>
+
                   <td data-label="Actions" class="actions-cell">
                     <button
                       type="button"
@@ -715,6 +720,7 @@ const projectsList = allProjects || [];
                       data-title={attr(service.title)}
                       data-code={attr(service.service_code)}
                       data-description={attr(service.description)}
+                      data-estimate-text={attr(service.estimate_text || "")}
                       data-image-url={attr(service.image_url || "")}
                       data-active={attr(String(service.is_active))}
                     >
@@ -745,7 +751,10 @@ const projectsList = allProjects || [];
         <div class="section-heading">
           <div>
             <h2 id="project-form-title">Add Portfolio Project</h2>
-            <p>Add, edit, or delete portfolio examples from your business page.</p>
+            <p>
+              Add, edit, or delete portfolio examples from your business page.
+              Use the same service code as the service it belongs to.
+            </p>
           </div>
           <span class="pill">{projectsList.length} projects</span>
         </div>
@@ -761,7 +770,10 @@ const projectsList = allProjects || [];
 
             <label>
               Service Code
-              <input type="text" id="project-service-code" placeholder="DATA" />
+              <input type="text" id="project-service-code" placeholder="DATA-01" />
+              <span class="small-note">
+                Match this to a service code. Example: WEB-01 project shows under WEB-01 service.
+              </span>
             </label>
           </div>
 
@@ -805,6 +817,7 @@ const projectsList = allProjects || [];
               <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {projectsList.length === 0 ? (
               <tr>
@@ -820,6 +833,7 @@ const projectsList = allProjects || [];
                   <td data-label="Category">{project.category || ""}</td>
                   <td data-label="Link" class="image-note">{project.project_url || ""}</td>
                   <td data-label="Description" class="mini-preview">{project.description}</td>
+
                   <td data-label="Actions" class="actions-cell">
                     <button
                       type="button"
@@ -850,7 +864,7 @@ const projectsList = allProjects || [];
     <script>
       import { supabase } from "../../lib/supabase.js";
 
-      const statusMessage = document.getElementById("status-message") as HTMLDivElement;
+      const statusMessage = document.getElementById("status-message") as HTMLDivElement | null;
 
       function showStatus(message: string, isError = false) {
         if (!statusMessage) return;
@@ -910,15 +924,13 @@ const projectsList = allProjects || [];
         });
       });
 
-      if (clearFormBtn) {
-        clearFormBtn.addEventListener("click", () => {
-          crudForm.reset();
-          inputId.value = "";
-          formActionTitle.textContent = "Create New Post";
-          submitBtn.textContent = "Save Post Entry";
-          clearFormBtn.style.display = "none";
-        });
-      }
+      clearFormBtn.addEventListener("click", () => {
+        crudForm.reset();
+        inputId.value = "";
+        formActionTitle.textContent = "Create New Post";
+        submitBtn.textContent = "Save Post Entry";
+        clearFormBtn.style.display = "none";
+      });
 
       crudForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -1038,6 +1050,7 @@ const projectsList = allProjects || [];
       const serviceTitle = document.getElementById("service-title") as HTMLInputElement;
       const serviceCode = document.getElementById("service-code") as HTMLInputElement;
       const serviceImageUrl = document.getElementById("service-image-url") as HTMLInputElement;
+      const serviceEstimateText = document.getElementById("service-estimate-text") as HTMLInputElement;
       const serviceDescription = document.getElementById("service-description") as HTMLTextAreaElement;
       const serviceActive = document.getElementById("service-active") as HTMLSelectElement;
       const serviceFormTitle = document.getElementById("service-form-title") as HTMLHeadingElement;
@@ -1052,6 +1065,7 @@ const projectsList = allProjects || [];
           serviceTitle.value = buttonEl.dataset.title || "";
           serviceCode.value = buttonEl.dataset.code || "";
           serviceImageUrl.value = buttonEl.dataset.imageUrl || "";
+          serviceEstimateText.value = buttonEl.dataset.estimateText || "";
           serviceDescription.value = buttonEl.dataset.description || "";
           serviceActive.value = buttonEl.dataset.active || "true";
 
@@ -1079,6 +1093,7 @@ const projectsList = allProjects || [];
           title: serviceTitle.value.trim(),
           service_code: serviceCode.value.trim().toUpperCase(),
           description: serviceDescription.value.trim(),
+          estimate_text: serviceEstimateText.value.trim() || null,
           image_url: serviceImageUrl.value.trim() || null,
           is_active: serviceActive.value === "true"
         };

@@ -1,7 +1,36 @@
 ---
+export const prerender = false;
+
 import { supabase } from "../lib/supabase.js";
 
-const title = "Business Services | NateNate";
+const title = "NateNate Digital Services";
+
+type Contact = {
+  business_email?: string | null;
+  business_phone?: string | null;
+  facebook_url?: string | null;
+};
+
+type Service = {
+  id?: number;
+  title?: string | null;
+  service_code?: string | null;
+  short_description?: string | null;
+  description?: string | null;
+  estimate_text?: string | null;
+  image_url?: string | null;
+  is_active?: boolean | null;
+};
+
+type Project = {
+  id?: number;
+  title?: string | null;
+  service_code?: string | null;
+  category?: string | null;
+  description?: string | null;
+  image_url?: string | null;
+  project_url?: string | null;
+};
 
 const { data: contactRows, error: contactError } = await supabase
   .from("site_contact")
@@ -13,7 +42,7 @@ if (contactError) {
   console.error("Error loading contact info:", contactError.message);
 }
 
-const contact = contactRows?.[0];
+const contact = contactRows?.[0] as Contact | undefined;
 
 const { data: serviceRows, error: servicesError } = await supabase
   .from("services")
@@ -25,7 +54,7 @@ if (servicesError) {
   console.error("Error loading services:", servicesError.message);
 }
 
-const services = serviceRows || [];
+const services = (serviceRows || []) as Service[];
 
 const { data: projectRows, error: projectsError } = await supabase
   .from("projects")
@@ -36,13 +65,43 @@ if (projectsError) {
   console.error("Error loading projects:", projectsError.message);
 }
 
-const projects = projectRows || [];
+const projects = (projectRows || []) as Project[];
 
-function cleanPhoneForLink(phone: string
-) {
+function cleanPhoneForLink(phone?: string | null) {
   if (!phone) return "";
   return phone.replace(/[^\d+]/g, "");
 }
+
+function serviceIcon(code?: string | null, title?: string | null) {
+  const text = `${code || ""} ${title || ""}`.toLowerCase();
+
+  if (text.includes("web")) return "🌐";
+  if (text.includes("spread") || text.includes("sheet") || text.includes("excel")) return "▦";
+  if (text.includes("inventory")) return "☑";
+  if (text.includes("data")) return "▤";
+  if (text.includes("trans") || text.includes("type")) return "〰";
+  if (text.includes("computer") || text.includes("tech")) return "🛠";
+  if (text.includes("repair") || text.includes("laptop")) return "⚙";
+  if (text.includes("design") || text.includes("flyer")) return "✦";
+  if (text.includes("business")) return "★";
+  if (text.includes("resume") || text.includes("job")) return "☰";
+
+  return "◈";
+}
+
+function serviceKey(value?: string | null) {
+  return (value || "").trim().toLowerCase();
+}
+
+function getProjectsForService(service: Service) {
+  const key = serviceKey(service.service_code);
+  if (!key) return [];
+
+  return projects.filter((project) => serviceKey(project.service_code) === key);
+}
+
+const featuredServices = services.slice(0, 7);
+const pricingServices = services.slice(0, 7);
 ---
 
 <html lang="en">
@@ -51,166 +110,506 @@ function cleanPhoneForLink(phone: string
     <title>{title}</title>
     <meta
       name="description"
-      content="Digital services, web design, data tools, transcribing, dashboards, portfolio projects, and computer services by NateNate."
+      content="NateNate Digital Services offers websites, spreadsheets, data entry, transcribing, computer help, project organization, and digital support."
     />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
 
   <body>
-    <main class="business-shell">
-      <aside class="sidebar">
-        <div class="sidebar-brand">
-          <p>NateNate</p>
-          <h1>Business Hub</h1>
-        </div>
+    <main class="page-shell">
+      <header class="site-header">
+        <a href="/" class="brand" aria-label="NateNate Digital Services home">
+          <span class="brand-mark">N</span>
 
-        <nav class="sidebar-nav">
-          <a href="/blog-cover">Blog Side</a>
-          <a href="/shop">Shop</a>
-          <a href="/login">Sign Up / Login</a>
-          <a href="/admin/dashboard" class="admin-button">Admin</a>
+          <span class="brand-text">
+            <strong>Nate<span>Nate</span></strong>
+            <small>Digital Services</small>
+          </span>
+        </a>
+
+        <nav class="nav-links" aria-label="Business navigation">
+          <a href="#home">Home</a>
+          <a href="#services">Services</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#portfolio">Projects</a>
+          <a href="#contact">Contact</a>
+          <a href="/login" class="customer-link">Customer Login</a>
+          <a href="/admin/dashboard" class="admin-link">Admin</a>
         </nav>
+      </header>
 
-        <div class="sidebar-footer">
-          <span class="status-dot"></span>
-          <span>Hub Online</span>
+      <section id="home" class="hero-section">
+        <div class="hero-content">
+          <p class="kicker">Smart Solutions. Reliable Results.</p>
+
+          <h1>
+            Digital Services for
+            <span>Websites, Spreadsheets,</span>
+            <span>Data Entry, and Tech Help</span>
+          </h1>
+
+          <p class="hero-description">
+            Helping you stay organized, productive, and stress-free with digital
+            services made for small businesses, side jobs, students, and everyday
+            projects.
+          </p>
+
+          <div class="hero-buttons">
+            <a href="/request-service" class="main-button">Request a Quote</a>
+            <a href="#services" class="ghost-button">View Services</a>
+            <a href="/login" class="ghost-button">Customer Login</a>
+          </div>
+
+          <div class="mini-stats">
+            <article>
+              <span>✓</span>
+              <strong>Accurate</strong>
+              <small>Quality you can trust</small>
+            </article>
+
+            <article>
+              <span>⏱</span>
+              <strong>On Time</strong>
+              <small>Deadline focused</small>
+            </article>
+
+            <article>
+              <span>🔒</span>
+              <strong>Secure</strong>
+              <small>Your info matters</small>
+            </article>
+          </div>
         </div>
-      </aside>
 
-      <section class="main-panel">
-        <section class="hero">
-          <div class="hero-grid">
-            <div>
-              <p class="tag">Computer Programming & Data Analysis</p>
-              <h2>NateNate Digital Services</h2>
+        <div class="hero-art" aria-hidden="true">
+          <div class="floating-card file-icon">▤</div>
+          <div class="floating-card folder-icon">▱</div>
+          <div class="floating-card sheet-icon">▦</div>
+
+          <div class="laptop-art">
+            <div class="laptop-screen">
+              <div class="side-menu"></div>
+              <div class="line-chart"></div>
+
+              <div class="bar-chart">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+
+              <div class="circle-chart"></div>
+
+              <div class="small-lines">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </div>
 
-            <div class="hero-actions">
-              <a href="#services">View Services</a>
-              <a href="#portfolio">View Portfolio</a>
-              <a href="#contact">Contact</a>
-            </div>
+            <div class="laptop-base"></div>
           </div>
-        </section>
-
-        <section id="services" class="content-section">
-          <div class="section-bar">
-            <h2>Services</h2>
-            <span>{services.length} Active</span>
-          </div>
-
-          <div class="services-grid">
-            {services.length === 0 ? (
-              <p class="loading-text">No services have been added yet.</p>
-            ) : (
-              services.map((service) => (
-                <article class="service-card">
-                  <a href={`/request-service?service=${service.service_code || ""}`}>
-                    <div class="card-image">
-                      <img
-                        src={service.image_url || "/images/default-service.jpg"}
-                        alt={service.title || "Service"}
-                      />
-                    </div>
-
-                    <div class="card-body">
-                      <div class="card-topline">
-                        <span>{service.service_code || "SERVICE"}</span>
-                      </div>
-
-                      <h3>{service.title}</h3>
-
-                      {(service.short_description || service.description) && (
-                        <p>{service.short_description || service.description}</p>
-                      )}
-
-                      {service.estimate_text && (
-                        <div class="estimate-chip">{service.estimate_text}</div>
-                      )}
-
-                      <div class="card-action">Request Service →</div>
-                    </div>
-                  </a>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section id="portfolio" class="content-section">
-          <div class="section-bar">
-            <h2>Portfolio</h2>
-            <span>{projects.length} Projects</span>
-          </div>
-
-          <div class="projects-grid">
-            {projects.length === 0 ? (
-              <p class="loading-text">No portfolio projects have been added yet.</p>
-            ) : (
-              projects.map((project) => (
-                <article class="project-card">
-                  <div class="project-image">
-                    <img
-                      src={project.image_url || "/images/default-project.jpg"}
-                      alt={project.title || "Project"}
-                    />
-                  </div>
-
-                  <div class="project-body">
-                    <div class="card-topline">
-                      <span>{project.service_code || "PROJECT"}</span>
-                      {project.category && <span>{project.category}</span>}
-                    </div>
-
-                    <h3>{project.title}</h3>
-
-                    {project.description && <p>{project.description}</p>}
-
-                    {project.project_url && (
-                      <a href={project.project_url} target="_blank" rel="noopener">
-                        View Project →
-                      </a>
-                    )}
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section id="contact" class="contact-section">
-          <div class="section-bar">
-            <h2>Contact</h2>
-            <span>Connect</span>
-          </div>
-
-          <div class="contact-grid">
-            <a
-              href={contact?.business_email ? `mailto:${contact.business_email}` : "#"}
-              class="contact-card"
-            >
-              {contact?.business_email
-                ? `Email: ${contact.business_email}`
-                : "Email unavailable"}
-            </a>
-
-            <a
-              href={contact?.business_phone
-                ? `tel:${cleanPhoneForLink(contact.business_phone)}`
-                : "#"}
-              class="contact-card"
-            >
-              {contact?.business_phone
-                ? `Call: ${contact.business_phone}`
-                : "Phone unavailable"}
-            </a>
-
-            <a href="/request-service" class="contact-card">
-              Request Service
-            </a>
-          </div>
-        </section>
+        </div>
       </section>
+
+      <section id="services" class="content-panel">
+        <div class="section-heading centered">
+          <p>Featured Services</p>
+          <h2>Professional digital services tailored to your needs.</h2>
+        </div>
+
+        <div class="services-grid">
+          {featuredServices.length === 0 ? (
+            <p class="empty-text">No active services have been added yet.</p>
+          ) : (
+            featuredServices.map((service: Service) => (
+              <article class="service-card">
+                <a href={`/request-service?service=${service.service_code || ""}`}>
+                  <div class="service-icon">
+                    {serviceIcon(service.service_code, service.title)}
+                  </div>
+
+                  <span class="service-code">
+                    {service.service_code || "SERVICE"}
+                  </span>
+
+                  <h3>{service.title || "Untitled Service"}</h3>
+
+                  {(service.short_description || service.description) && (
+                    <p>{service.short_description || service.description}</p>
+                  )}
+
+                  <strong>Learn more →</strong>
+                </a>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="pricing" class="pricing-panel">
+        <div class="pricing-intro">
+          <h2>Starter <span>Prices</span></h2>
+          <p>Affordable pricing to fit small businesses and individuals.</p>
+
+          <button type="button" class="price-popup-button" data-open-prices>
+            View Price List
+          </button>
+        </div>
+
+        <div class="pricing-list">
+          {pricingServices.length === 0 ? (
+            <p class="empty-text">Add active services in admin to show prices here.</p>
+          ) : (
+            pricingServices.map((service: Service) => (
+              <article>
+                <span class="price-icon">
+                  {serviceIcon(service.service_code, service.title)}
+                </span>
+
+                <div>
+                  <strong>{service.title || "Service"}</strong>
+                  <small>{service.estimate_text || "Message for estimate"}</small>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <dialog class="price-modal" data-price-modal>
+        <div class="price-modal-card">
+          <button type="button" class="modal-close" data-close-prices>
+            ×
+          </button>
+
+          <div class="modal-heading">
+            <p>NateNate Digital Services</p>
+            <h2>Starter Prices</h2>
+            <span>Prices may vary by project size and details.</span>
+          </div>
+
+          <div class="modal-price-list">
+            {services.length === 0 ? (
+              <p class="empty-text">No active services have been added yet.</p>
+            ) : (
+              services.map((service: Service) => (
+                <article>
+                  <div class="modal-price-icon">
+                    {serviceIcon(service.service_code, service.title)}
+                  </div>
+
+                  <div>
+                    <span>{service.service_code || "SERVICE"}</span>
+                    <h3>{service.title || "Untitled Service"}</h3>
+                  </div>
+
+                  <strong>{service.estimate_text || "Message for estimate"}</strong>
+                </article>
+              ))
+            )}
+          </div>
+
+          <div class="modal-note">
+            <p>
+              Final price depends on project size, details, and time needed.
+              Parts are not included for repairs.
+            </p>
+
+            <a href="/request-service" class="main-button">Request a Quote</a>
+          </div>
+        </div>
+      </dialog>
+
+      <section id="service-details" class="content-panel service-detail-panel">
+        <div class="section-heading">
+          <p>Service Details</p>
+          <h2>Services from your admin page</h2>
+          <span>{services.length} active</span>
+        </div>
+
+        <div class="detail-grid">
+          {services.length === 0 ? (
+            <p class="empty-text">No services have been added yet.</p>
+          ) : (
+            services.map((service: Service) => (
+              <article class="detail-card">
+                <div class="detail-top">
+                  <div class="service-icon">
+                    {serviceIcon(service.service_code, service.title)}
+                  </div>
+
+                  <div>
+                    <span class="service-code">
+                      {service.service_code || "SERVICE"}
+                    </span>
+                    <h3>{service.title || "Untitled Service"}</h3>
+                  </div>
+                </div>
+
+                {(service.short_description || service.description) && (
+                  <p class="service-description">
+                    {service.short_description || service.description}
+                  </p>
+                )}
+
+                {service.estimate_text && (
+                  <div class="estimate-box">{service.estimate_text}</div>
+                )}
+
+                {getProjectsForService(service).length > 0 && (
+                  <div class="linked-projects">
+                    <h4>Projects for this service</h4>
+
+                    <div class="linked-project-list">
+                      {getProjectsForService(service).slice(0, 3).map((project: Project) => (
+                        <a
+                          href={project.project_url || "#portfolio"}
+                          target={project.project_url ? "_blank" : undefined}
+                          rel={project.project_url ? "noopener" : undefined}
+                        >
+                          <strong>{project.title || "Project"}</strong>
+                          {project.category && <span>{project.category}</span>}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <a
+                  href={`/request-service?service=${service.service_code || ""}`}
+                  class="card-button"
+                >
+                  Request this service
+                </a>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="portfolio" class="content-panel">
+        <div class="section-heading centered">
+          <p>Project Examples</p>
+          <h2>Projects connected to your services.</h2>
+        </div>
+
+        <div class="projects-by-service">
+          {services.length === 0 ? (
+            <p class="empty-text">No services have been added yet.</p>
+          ) : (
+            services.map((service: Service) => (
+              <section class="service-project-group">
+                <div class="group-heading">
+                  <div class="service-icon">
+                    {serviceIcon(service.service_code, service.title)}
+                  </div>
+
+                  <div>
+                    <span class="service-code">
+                      {service.service_code || "SERVICE"}
+                    </span>
+                    <h3>{service.title || "Untitled Service"}</h3>
+                  </div>
+                </div>
+
+                <div class="projects-grid">
+                  {getProjectsForService(service).length === 0 ? (
+                    <p class="empty-text small">
+                      No projects connected to this service yet.
+                    </p>
+                  ) : (
+                    getProjectsForService(service).map((project: Project) => (
+                      <article class="project-card">
+                        <div class="project-image">
+                          <img
+                            src={project.image_url || "/images/default-project.jpg"}
+                            alt={project.title || "Project"}
+                          />
+                        </div>
+
+                        <div class="project-body">
+                          <div class="project-tags">
+                            <span>{project.service_code || "PROJECT"}</span>
+                            {project.category && <span>{project.category}</span>}
+                          </div>
+
+                          <h3>{project.title || "Untitled Project"}</h3>
+
+                          {project.description && <p>{project.description}</p>}
+
+                          {project.project_url && (
+                            <a
+                              href={project.project_url}
+                              target="_blank"
+                              rel="noopener"
+                            >
+                              View Project →
+                            </a>
+                          )}
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="all-projects" class="content-panel">
+        <div class="section-heading">
+          <p>All Projects</p>
+          <h2>Portfolio from your admin page</h2>
+          <span>{projects.length} projects</span>
+        </div>
+
+        <div class="projects-grid all-projects-grid">
+          {projects.length === 0 ? (
+            <p class="empty-text">No portfolio projects have been added yet.</p>
+          ) : (
+            projects.map((project: Project) => (
+              <article class="project-card">
+                <div class="project-image">
+                  <img
+                    src={project.image_url || "/images/default-project.jpg"}
+                    alt={project.title || "Project"}
+                  />
+                </div>
+
+                <div class="project-body">
+                  <div class="project-tags">
+                    <span>{project.service_code || "PROJECT"}</span>
+                    {project.category && <span>{project.category}</span>}
+                  </div>
+
+                  <h3>{project.title || "Untitled Project"}</h3>
+
+                  {project.description && <p>{project.description}</p>}
+
+                  {project.project_url && (
+                    <a href={project.project_url} target="_blank" rel="noopener">
+                      View Project →
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="contact" class="cta-panel">
+        <div class="chat-bubble">💬</div>
+
+        <div>
+          <p>Need help getting organized or solving a problem?</p>
+          <h2>Let’s work together to get it done right.</h2>
+        </div>
+
+        <div class="contact-buttons">
+          <a href="/request-service" class="main-button">Request a Quote</a>
+
+          {contact?.business_email && (
+            <a href={`mailto:${contact.business_email}`} class="ghost-button">
+              Email Me
+            </a>
+          )}
+
+          {contact?.business_phone && (
+            <a
+              href={`tel:${cleanPhoneForLink(contact.business_phone)}`}
+              class="ghost-button"
+            >
+              Call Me
+            </a>
+          )}
+
+          <a href="/login" class="ghost-button">Customer Login</a>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div>
+          <a href="/" class="brand footer-brand">
+            <span class="brand-mark">N</span>
+
+            <span class="brand-text">
+              <strong>Nate<span>Nate</span></strong>
+              <small>Digital Services</small>
+            </span>
+          </a>
+
+          <p>
+            Smart solutions for websites, spreadsheets, data entry, typing,
+            organization, and tech help.
+          </p>
+        </div>
+
+        <div>
+          <h3>Quick Links</h3>
+          <a href="#home">Home</a>
+          <a href="#services">Services</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#portfolio">Projects</a>
+          <a href="/login">Customer Login</a>
+          <a href="/admin/dashboard">Admin</a>
+        </div>
+
+        <div>
+          <h3>Contact</h3>
+
+          {contact?.business_email ? (
+            <a href={`mailto:${contact.business_email}`}>
+              {contact.business_email}
+            </a>
+          ) : (
+            <span>Email unavailable</span>
+          )}
+
+          {contact?.business_phone ? (
+            <a href={`tel:${cleanPhoneForLink(contact.business_phone)}`}>
+              {contact.business_phone}
+            </a>
+          ) : (
+            <span>Phone unavailable</span>
+          )}
+
+          {contact?.facebook_url && (
+            <a href={contact.facebook_url} target="_blank" rel="noopener">
+              Facebook
+            </a>
+          )}
+
+          <a href="/request-service">Request Service</a>
+        </div>
+      </footer>
     </main>
+
+    <script is:inline>
+      const priceModal = document.querySelector("[data-price-modal]");
+      const openPriceButtons = document.querySelectorAll("[data-open-prices]");
+      const closePriceButtons = document.querySelectorAll("[data-close-prices]");
+
+      openPriceButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          if (priceModal) priceModal.showModal();
+        });
+      });
+
+      closePriceButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          if (priceModal) priceModal.close();
+        });
+      });
+
+      priceModal?.addEventListener("click", (event) => {
+        if (event.target === priceModal) {
+          priceModal.close();
+        }
+      });
+    </script>
   </body>
 </html>
 
@@ -219,19 +618,12 @@ function cleanPhoneForLink(phone: string
     margin: 0;
     font-family:
       Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #f7fbff;
     background:
-      radial-gradient(
-        circle at top right,
-        rgba(43, 199, 178, 0.08),
-        transparent 34rem
-      ),
-      radial-gradient(
-        circle at bottom left,
-        rgba(120, 131, 150, 0.08),
-        transparent 30rem
-      ),
-      #f4f6f8;
-    color: #101418;
+      radial-gradient(circle at 78% 16%, rgba(79, 255, 76, 0.22), transparent 24rem),
+      radial-gradient(circle at 12% 10%, rgba(0, 179, 255, 0.28), transparent 26rem),
+      radial-gradient(circle at 50% 90%, rgba(0, 119, 255, 0.18), transparent 36rem),
+      #020d22;
   }
 
   * {
@@ -242,514 +634,1204 @@ function cleanPhoneForLink(phone: string
     scroll-behavior: smooth;
   }
 
-  .business-shell {
-    display: grid;
-    grid-template-columns: 230px minmax(0, 1fr);
+  a {
+    color: inherit;
+  }
+
+  .page-shell {
+    position: relative;
+    overflow: hidden;
     min-height: 100vh;
   }
 
-  .sidebar {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 1.2rem;
-    background:
-      linear-gradient(180deg, #111827, #0b111c),
-      #111827;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 14px 0 40px rgba(16, 20, 24, 0.16);
-  }
-
-  .sidebar-brand {
-    padding: 1rem;
-    border-radius: 1.1rem;
-    background: rgba(255, 255, 255, 0.045);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .sidebar-brand p {
-    margin: 0 0 0.5rem;
-    color: #7dd3c7;
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-  }
-
-  .sidebar-brand h1 {
-    margin: 0;
-    color: #f8fafc;
-    font-size: 1.35rem;
-    line-height: 1;
-    letter-spacing: -0.04em;
-  }
-
-  .sidebar-nav {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.8rem;
-    margin-top: 1.5rem;
-  }
-
-  .sidebar-nav a {
-    position: relative;
-    display: block;
-    padding: 1rem;
-    overflow: hidden;
-    border-radius: 0.95rem;
-    color: #e5e7eb;
-    font-weight: 850;
-    text-decoration: none;
-    background: rgba(255, 255, 255, 0.045);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition:
-      transform 0.2s ease,
-      border-color 0.2s ease,
-      background 0.2s ease;
-  }
-
-  .sidebar-nav a::before {
+  .page-shell::before {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
-    width: 4px;
-    background: #7dd3c7;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  .sidebar-nav a:hover {
-    transform: translateX(5px);
-    background: rgba(125, 211, 199, 0.1);
-    border-color: rgba(125, 211, 199, 0.38);
-  }
-
-  .sidebar-nav a:hover::before {
-    opacity: 1;
-  }
-
-  .sidebar-nav .admin-button {
-    margin-top: 1rem;
-    color: #f8fafc;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.14);
-  }
-
-  .sidebar-nav .admin-button:hover {
-    background: rgba(125, 211, 199, 0.12);
-    border-color: rgba(125, 211, 199, 0.38);
-  }
-
-  .sidebar-footer {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-top: auto;
-    padding: 1rem;
-    color: #aab2bf;
-    font-size: 0.82rem;
-    font-weight: 800;
-    border-radius: 1rem;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .status-dot {
-    width: 0.65rem;
-    height: 0.65rem;
-    border-radius: 999px;
-    background: #7dd3c7;
-    box-shadow: 0 0 14px rgba(125, 211, 199, 0.65);
-  }
-
-  .main-panel {
-    min-width: 0;
-    padding: 1.5rem;
-  }
-
-  .hero,
-  .content-section,
-  .contact-section {
-    position: relative;
-    overflow: hidden;
-    border-radius: 1.4rem;
-    background:
-      linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.96),
-        rgba(248, 250, 252, 0.94)
-      ),
-      #ffffff;
-    border: 1px solid rgba(16, 20, 24, 0.08);
-    box-shadow: 0 18px 45px rgba(16, 20, 24, 0.08);
-  }
-
-  .hero::before,
-  .content-section::before,
-  .contact-section::before {
-    content: "";
-    position: absolute;
-    inset: 0;
+    z-index: -2;
     pointer-events: none;
     background-image:
-      linear-gradient(rgba(16, 20, 24, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(16, 20, 24, 0.035) 1px, transparent 1px);
-    background-size: 42px 42px;
-    mask-image: linear-gradient(to bottom, black, transparent 70%);
+      linear-gradient(rgba(0, 183, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 183, 255, 0.08) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(circle at center, black, transparent 75%);
   }
 
-  .hero {
-    min-height: 360px;
-    display: flex;
-    align-items: center;
-    padding: 3rem;
+  .page-shell::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.52;
     background:
-      linear-gradient(
-        135deg,
-        rgba(17, 24, 39, 0.96),
-        rgba(31, 41, 55, 0.92)
-      ),
-      #111827;
-    color: #f8fafc;
+      linear-gradient(135deg, transparent 0 44%, rgba(0, 183, 255, 0.16) 44% 45%, transparent 45%),
+      linear-gradient(45deg, transparent 0 62%, rgba(109, 255, 65, 0.14) 62% 63%, transparent 63%),
+      radial-gradient(circle at 4% 40%, rgba(0, 183, 255, 0.14), transparent 18rem),
+      radial-gradient(circle at 99% 55%, rgba(109, 255, 65, 0.13), transparent 18rem);
   }
 
-  .hero-grid {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2rem;
-    width: 100%;
-    align-items: end;
+  .site-header,
+  .hero-section,
+  .content-panel,
+  .pricing-panel,
+  .cta-panel,
+  .footer {
+    width: min(1220px, calc(100% - 2rem));
+    margin-inline: auto;
   }
 
-  .tag {
-    margin: 0 0 1rem;
-    color: #7dd3c7;
-    font-size: 0.78rem;
-    font-weight: 900;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .hero h2 {
-    margin: 0;
-    max-width: 820px;
-    color: #f8fafc;
-    font-size: clamp(3rem, 7vw, 6.5rem);
-    line-height: 0.9;
-    letter-spacing: -0.08em;
-  }
-
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-  }
-
-  .hero-actions a,
-  .contact-card {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48px;
-    padding: 0.9rem 1.1rem;
-    border-radius: 999px;
-    color: #111827;
-    font-weight: 900;
-    text-decoration: none;
-    background: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.42);
-    transition:
-      transform 0.2s ease,
-      background 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .hero-actions a:hover,
-  .contact-card:hover {
-    transform: translateY(-2px);
-    background: #7dd3c7;
-    border-color: #7dd3c7;
-  }
-
-  .content-section,
-  .contact-section {
-    margin-top: 1.5rem;
-    padding: 2rem;
-  }
-
-  .section-bar {
-    position: relative;
-    z-index: 1;
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
     display: flex;
     justify-content: space-between;
-    gap: 1rem;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(16, 20, 24, 0.09);
+    gap: 1rem;
+    padding: 1.1rem 0;
+    backdrop-filter: blur(16px);
   }
 
-  .section-bar h2 {
-    margin: 0;
-    color: #101418;
-    font-size: clamp(1.8rem, 4vw, 3rem);
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 1rem;
+    color: #00142d;
+    font-size: 2rem;
+    font-weight: 1000;
+    background: linear-gradient(135deg, #006dff, #00d5ff 45%, #70ff38);
+    box-shadow:
+      0 0 28px rgba(0, 183, 255, 0.38),
+      0 0 45px rgba(112, 255, 56, 0.18);
+  }
+
+  .brand-text strong {
+    display: block;
+    color: #ffffff;
+    font-size: 1.55rem;
     line-height: 1;
     letter-spacing: -0.055em;
   }
 
-  .section-bar span {
-    padding: 0.55rem 0.85rem;
+  .brand-text strong span {
+    color: #70ff38;
+  }
+
+  .brand-text small {
+    display: block;
+    margin-top: 0.28rem;
+    color: #dcecff;
+    font-size: 0.64rem;
+    font-weight: 950;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .nav-links a {
+    padding: 0.72rem 0.82rem;
     border-radius: 999px;
-    color: #0f766e;
-    font-size: 0.8rem;
-    font-weight: 900;
-    background: rgba(125, 211, 199, 0.13);
-    border: 1px solid rgba(15, 118, 110, 0.14);
-  }
-
-  .services-grid,
-  .projects-grid {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-  }
-
-  .service-card,
-  .project-card {
-    overflow: hidden;
-    border-radius: 1.15rem;
-    background: #ffffff;
-    border: 1px solid rgba(16, 20, 24, 0.08);
-    box-shadow: 0 14px 35px rgba(16, 20, 24, 0.07);
+    color: #f7fbff;
+    font-size: 0.88rem;
+    font-weight: 850;
+    text-decoration: none;
+    border: 1px solid transparent;
     transition:
       transform 0.2s ease,
+      background 0.2s ease,
       border-color 0.2s ease,
       box-shadow 0.2s ease;
   }
 
+  .nav-links a:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 183, 255, 0.09);
+    border-color: rgba(0, 183, 255, 0.34);
+    box-shadow: 0 0 18px rgba(0, 183, 255, 0.13);
+  }
+
+  .nav-links .customer-link {
+    border-color: rgba(112, 255, 56, 0.42);
+    background: rgba(112, 255, 56, 0.08);
+  }
+
+  .nav-links .admin-link {
+    padding-inline: 1rem;
+    border-color: rgba(0, 183, 255, 0.48);
+    background: rgba(2, 13, 34, 0.82);
+  }
+
+  .hero-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+    gap: clamp(1.4rem, 5vw, 4rem);
+    align-items: center;
+    min-height: 640px;
+    padding: clamp(2rem, 5vw, 4.8rem) 0;
+  }
+
+  .kicker {
+    margin: 0 0 1rem;
+    color: #70ff38;
+    font-size: 0.78rem;
+    font-weight: 1000;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .hero-section h1 {
+    margin: 0;
+    max-width: 780px;
+    color: #ffffff;
+    font-size: clamp(2.7rem, 6vw, 5.4rem);
+    line-height: 0.94;
+    letter-spacing: -0.08em;
+  }
+
+  .hero-section h1 span {
+    display: block;
+    background: linear-gradient(90deg, #00b7ff, #70ff38);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .hero-description {
+    max-width: 680px;
+    margin: 1.25rem 0 0;
+    color: #c8ddf6;
+    font-size: 1.08rem;
+    line-height: 1.65;
+    font-weight: 650;
+  }
+
+  .hero-buttons,
+  .contact-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 1.8rem;
+  }
+
+  .main-button,
+  .ghost-button,
+  .card-button,
+  .price-popup-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0.9rem 1.25rem;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 1000;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .main-button,
+  .price-popup-button {
+    border: 0;
+    color: #ffffff;
+    background: linear-gradient(135deg, #006dff, #00c9ff 45%, #70ff38);
+    box-shadow:
+      0 0 26px rgba(0, 183, 255, 0.38),
+      0 0 38px rgba(112, 255, 56, 0.22);
+  }
+
+  .ghost-button,
+  .card-button {
+    color: #f7fbff;
+    border: 1px solid rgba(0, 183, 255, 0.45);
+    background: rgba(2, 13, 34, 0.58);
+  }
+
+  .main-button:hover,
+  .ghost-button:hover,
+  .card-button:hover,
+  .price-popup-button:hover {
+    transform: translateY(-3px);
+  }
+
+  .mini-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    max-width: 680px;
+    margin-top: 1.6rem;
+  }
+
+  .mini-stats article {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.1rem 0.55rem;
+    align-items: center;
+    padding: 0.85rem;
+    border-radius: 1rem;
+    background: rgba(7, 27, 64, 0.58);
+    border: 1px solid rgba(0, 183, 255, 0.18);
+  }
+
+  .mini-stats span {
+    grid-row: span 2;
+    color: #00b7ff;
+    font-size: 1.2rem;
+  }
+
+  .mini-stats strong {
+    color: #ffffff;
+    font-size: 0.92rem;
+  }
+
+  .mini-stats small {
+    color: #97add0;
+    font-size: 0.78rem;
+  }
+
+  .hero-art {
+    position: relative;
+    min-height: 390px;
+  }
+
+  .floating-card {
+    position: absolute;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 1rem;
+    color: #00b7ff;
+    font-size: 2rem;
+    border: 1px solid rgba(0, 183, 255, 0.44);
+    background: rgba(2, 13, 34, 0.72);
+    box-shadow: 0 0 26px rgba(0, 183, 255, 0.18);
+  }
+
+  .file-icon {
+    top: 1rem;
+    left: 7rem;
+  }
+
+  .folder-icon {
+    top: 8rem;
+    left: 3rem;
+  }
+
+  .sheet-icon {
+    bottom: 4rem;
+    left: 5rem;
+  }
+
+  .laptop-art {
+    position: absolute;
+    right: 0;
+    bottom: 1.5rem;
+    width: min(100%, 560px);
+    height: 330px;
+  }
+
+  .laptop-screen {
+    position: absolute;
+    inset: 0 0 78px;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    background:
+      linear-gradient(135deg, rgba(0, 183, 255, 0.18), rgba(112, 255, 56, 0.12)),
+      #061a42;
+    border: 1px solid rgba(0, 183, 255, 0.48);
+    box-shadow:
+      0 0 40px rgba(0, 183, 255, 0.26),
+      45px 35px 70px rgba(112, 255, 56, 0.2);
+    transform: rotateX(7deg) rotateY(-13deg);
+  }
+
+  .side-menu {
+    position: absolute;
+    top: 1.25rem;
+    bottom: 1.25rem;
+    left: 1.25rem;
+    width: 60px;
+    border-radius: 0.9rem;
+    background: rgba(0, 183, 255, 0.13);
+    border: 1px solid rgba(0, 183, 255, 0.24);
+  }
+
+  .line-chart {
+    position: absolute;
+    left: 7rem;
+    top: 3.2rem;
+    width: 210px;
+    height: 95px;
+    border-bottom: 3px solid #00b7ff;
+    border-left: 3px solid #00b7ff;
+    transform: skew(-18deg);
+    box-shadow: 0 0 20px rgba(0, 183, 255, 0.58);
+  }
+
+  .bar-chart {
+    position: absolute;
+    left: 7.2rem;
+    bottom: 3.3rem;
+    display: flex;
+    align-items: end;
+    gap: 0.6rem;
+    height: 90px;
+  }
+
+  .bar-chart span {
+    display: block;
+    width: 24px;
+    border-radius: 999px 999px 0 0;
+    background: linear-gradient(#70ff38, #00b7ff);
+    box-shadow: 0 0 18px rgba(0, 183, 255, 0.45);
+  }
+
+  .bar-chart span:nth-child(1) {
+    height: 35px;
+  }
+
+  .bar-chart span:nth-child(2) {
+    height: 52px;
+  }
+
+  .bar-chart span:nth-child(3) {
+    height: 70px;
+  }
+
+  .bar-chart span:nth-child(4) {
+    height: 86px;
+  }
+
+  .circle-chart {
+    position: absolute;
+    right: 3.6rem;
+    top: 3.3rem;
+    width: 102px;
+    height: 102px;
+    border-radius: 50%;
+    background:
+      conic-gradient(#70ff38 0 33%, #00b7ff 33% 72%, rgba(255, 255, 255, 0.18) 72% 100%);
+    box-shadow: 0 0 24px rgba(0, 183, 255, 0.34);
+  }
+
+  .small-lines {
+    position: absolute;
+    right: 3rem;
+    bottom: 3.4rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .small-lines span {
+    display: block;
+    width: 130px;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #00b7ff, #70ff38);
+    opacity: 0.75;
+  }
+
+  .laptop-base {
+    position: absolute;
+    left: 12%;
+    right: 4%;
+    bottom: 38px;
+    height: 78px;
+    border-radius: 0 0 2.4rem 2.4rem;
+    background: linear-gradient(135deg, #071a3a, #0b2f62);
+    border: 1px solid rgba(0, 183, 255, 0.26);
+    transform: skewX(-18deg);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.48);
+  }
+
+  .content-panel,
+  .pricing-panel,
+  .cta-panel {
+    margin-top: 1.25rem;
+    padding: clamp(1.2rem, 3vw, 2rem);
+    border-radius: 1.6rem;
+    background:
+      linear-gradient(135deg, rgba(7, 27, 64, 0.82), rgba(2, 13, 34, 0.94)),
+      rgba(2, 13, 34, 0.9);
+    border: 1px solid rgba(0, 183, 255, 0.25);
+    box-shadow:
+      0 0 36px rgba(0, 183, 255, 0.09),
+      inset 0 0 30px rgba(0, 183, 255, 0.045);
+  }
+
+  .section-heading {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem 1rem;
+    align-items: end;
+    margin-bottom: 1.35rem;
+  }
+
+  .section-heading.centered {
+    display: block;
+    text-align: center;
+  }
+
+  .section-heading p {
+    margin: 0;
+    color: #70ff38;
+    font-size: 0.78rem;
+    font-weight: 1000;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .section-heading h2 {
+    margin: 0.25rem 0 0;
+    color: #ffffff;
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.055em;
+  }
+
+  .section-heading span {
+    padding: 0.6rem 0.85rem;
+    border-radius: 999px;
+    color: #c8ddf6;
+    font-size: 0.78rem;
+    font-weight: 900;
+    background: rgba(0, 183, 255, 0.07);
+    border: 1px solid rgba(0, 183, 255, 0.22);
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .service-card,
+  .detail-card,
+  .project-card,
+  .service-project-group {
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: rgba(2, 13, 34, 0.82);
+    border: 1px solid rgba(0, 183, 255, 0.26);
+    box-shadow: inset 0 0 24px rgba(0, 183, 255, 0.04);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .service-card:nth-child(even),
+  .detail-card:nth-child(even),
+  .service-project-group:nth-child(even) {
+    border-color: rgba(112, 255, 56, 0.26);
+  }
+
   .service-card:hover,
-  .project-card:hover {
+  .detail-card:hover,
+  .project-card:hover,
+  .service-project-group:hover {
     transform: translateY(-5px);
-    border-color: rgba(15, 118, 110, 0.3);
-    box-shadow: 0 22px 48px rgba(16, 20, 24, 0.12);
+    border-color: rgba(0, 183, 255, 0.68);
+    box-shadow: 0 0 28px rgba(0, 183, 255, 0.16);
   }
 
   .service-card a {
-    display: block;
+    display: grid;
+    gap: 0.6rem;
+    min-height: 100%;
+    padding: 1rem;
     color: inherit;
+    text-align: center;
     text-decoration: none;
   }
 
-  .card-image,
-  .project-image {
-    height: 185px;
-    background:
-      linear-gradient(135deg, rgba(17, 24, 39, 0.9), rgba(55, 65, 81, 0.86)),
-      #111827;
+  .service-icon,
+  .price-icon {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    margin-inline: auto;
+    border-radius: 1rem;
+    color: #00b7ff;
+    font-size: 1.8rem;
+    font-weight: 1000;
+    background: rgba(0, 183, 255, 0.08);
+    border: 1px solid rgba(0, 183, 255, 0.42);
+    box-shadow: 0 0 18px rgba(0, 183, 255, 0.12);
   }
 
-  .card-image img,
-  .project-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  .service-card:nth-child(even) .service-icon,
+  .detail-card:nth-child(even) .service-icon,
+  .service-project-group:nth-child(even) .service-icon {
+    color: #70ff38;
+    background: rgba(112, 255, 56, 0.08);
+    border-color: rgba(112, 255, 56, 0.42);
   }
 
-  .card-body,
-  .project-body {
-    padding: 1.2rem;
-  }
-
-  .card-topline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .card-topline span {
-    display: inline-flex;
-    padding: 0.38rem 0.6rem;
-    border-radius: 999px;
-    color: #0f766e;
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    background: rgba(125, 211, 199, 0.13);
-    border: 1px solid rgba(15, 118, 110, 0.13);
+  .service-code {
+    color: #00b7ff;
+    font-size: 0.67rem;
+    font-weight: 1000;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
   }
 
   .service-card h3,
-  .project-card h3 {
-    margin: 0 0 0.7rem;
-    color: #101418;
-    font-size: 1.25rem;
-    letter-spacing: -0.025em;
+  .detail-card h3,
+  .project-card h3,
+  .service-project-group h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.02rem;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
   }
 
   .service-card p,
+  .detail-card p,
   .project-card p {
     margin: 0;
-    color: #5f6b7a;
-    line-height: 1.6;
+    color: #bdd0ec;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    font-weight: 600;
   }
 
-  .estimate-chip {
-    margin-top: 1rem;
-    padding: 0.8rem;
-    border-radius: 0.9rem;
-    color: #101418;
-    font-weight: 800;
-    line-height: 1.5;
-    background: #f3f7f7;
-    border: 1px solid rgba(16, 20, 24, 0.08);
-  }
-
-  .card-action,
-  .project-card a {
-    display: inline-flex;
-    margin-top: 1rem;
-    color: #0f766e;
-    font-weight: 900;
+  .service-card strong,
+  .project-card a,
+  .linked-project-list a {
+    color: #00b7ff;
+    font-size: 0.84rem;
+    font-weight: 1000;
     text-decoration: none;
   }
 
-  .contact-section {
-    margin-bottom: 1.5rem;
+  .pricing-panel {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    gap: 1rem;
   }
 
-  .contact-grid {
+  .pricing-intro {
+    padding: 1.1rem;
+    border-radius: 1.2rem;
+    background: rgba(2, 13, 34, 0.55);
+    border: 1px solid rgba(0, 183, 255, 0.2);
+  }
+
+  .pricing-intro h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.07em;
+  }
+
+  .pricing-intro h2 span {
+    color: #70ff38;
+  }
+
+  .pricing-intro p {
+    margin: 0.8rem 0 1rem;
+    color: #bdd0ec;
+    line-height: 1.5;
+    font-weight: 650;
+  }
+
+  .pricing-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .pricing-list article {
+    display: grid;
+    gap: 0.55rem;
+    align-content: center;
+    min-height: 120px;
+    padding: 0.9rem;
+    text-align: center;
+    border-radius: 1.1rem;
+    background: rgba(0, 183, 255, 0.055);
+    border: 1px solid rgba(0, 183, 255, 0.18);
+  }
+
+  .price-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.45rem;
+  }
+
+  .pricing-list strong {
+    display: block;
+    color: #ffffff;
+    font-size: 0.88rem;
+  }
+
+  .pricing-list small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #70ff38;
+    font-size: 0.8rem;
+    font-weight: 900;
+    line-height: 1.35;
+  }
+
+  .price-modal {
+    width: min(920px, calc(100% - 1.5rem));
+    max-height: 88vh;
+    padding: 0;
+    border: 1px solid rgba(0, 183, 255, 0.45);
+    border-radius: 1.6rem;
+    color: #f7fbff;
+    background:
+      radial-gradient(circle at top right, rgba(112, 255, 56, 0.18), transparent 18rem),
+      radial-gradient(circle at bottom left, rgba(0, 183, 255, 0.2), transparent 18rem),
+      #020d22;
+    box-shadow:
+      0 0 45px rgba(0, 183, 255, 0.25),
+      0 0 80px rgba(112, 255, 56, 0.12);
+  }
+
+  .price-modal::backdrop {
+    background: rgba(0, 4, 16, 0.78);
+    backdrop-filter: blur(8px);
+  }
+
+  .price-modal-card {
     position: relative;
-    z-index: 1;
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(0, 183, 255, 0.38);
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    background: rgba(2, 13, 34, 0.8);
+  }
+
+  .modal-close:hover {
+    border-color: rgba(112, 255, 56, 0.55);
+    box-shadow: 0 0 22px rgba(112, 255, 56, 0.18);
+  }
+
+  .modal-heading {
+    padding-right: 3rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .modal-heading p {
+    margin: 0;
+    color: #70ff38;
+    font-size: 0.78rem;
+    font-weight: 1000;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .modal-heading h2 {
+    margin: 0.25rem 0;
+    color: #ffffff;
+    font-size: clamp(2rem, 6vw, 4rem);
+    line-height: 0.95;
+    letter-spacing: -0.075em;
+  }
+
+  .modal-heading span {
+    color: #bdd0ec;
+    font-weight: 700;
+  }
+
+  .modal-price-list {
+    display: grid;
+    gap: 0.75rem;
+    max-height: 52vh;
+    overflow: auto;
+    padding-right: 0.35rem;
+  }
+
+  .modal-price-list article {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.85rem;
+    align-items: center;
+    padding: 0.9rem;
+    border-radius: 1.1rem;
+    background: rgba(0, 183, 255, 0.055);
+    border: 1px solid rgba(0, 183, 255, 0.18);
+  }
+
+  .modal-price-list article:nth-child(even) {
+    border-color: rgba(112, 255, 56, 0.22);
+  }
+
+  .modal-price-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 1rem;
+    color: #00b7ff;
+    font-size: 1.45rem;
+    font-weight: 1000;
+    background: rgba(0, 183, 255, 0.08);
+    border: 1px solid rgba(0, 183, 255, 0.42);
+  }
+
+  .modal-price-list article:nth-child(even) .modal-price-icon {
+    color: #70ff38;
+    background: rgba(112, 255, 56, 0.08);
+    border-color: rgba(112, 255, 56, 0.42);
+  }
+
+  .modal-price-list span {
+    color: #00b7ff;
+    font-size: 0.68rem;
+    font-weight: 1000;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .modal-price-list h3 {
+    margin: 0.18rem 0 0;
+    color: #ffffff;
+    font-size: 1rem;
+    letter-spacing: -0.025em;
+  }
+
+  .modal-price-list strong {
+    justify-self: end;
+    color: #70ff38;
+    text-align: right;
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .modal-note {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 183, 255, 0.18);
+  }
+
+  .modal-note p {
+    margin: 0;
+    color: #bdd0ec;
+    line-height: 1.5;
+    font-weight: 650;
+  }
+
+  .detail-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
   }
 
-  .contact-card {
-    border-radius: 1.1rem;
-    color: #101418;
-    background: #ffffff;
-    border: 1px solid rgba(16, 20, 24, 0.08);
-    box-shadow: 0 14px 35px rgba(16, 20, 24, 0.06);
+  .detail-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.1rem;
   }
 
-  .contact-card:hover {
-    color: #101418;
-    background: #e6fffb;
-    border-color: rgba(15, 118, 110, 0.22);
+  .detail-top,
+  .group-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
   }
 
-  .loading-text {
-    position: relative;
-    z-index: 1;
-    grid-column: 1 / -1;
-    color: #5f6b7a;
+  .detail-top .service-icon,
+  .group-heading .service-icon {
+    flex: 0 0 auto;
+    margin-inline: 0;
+  }
+
+  .service-description {
+    white-space: pre-line;
+  }
+
+  .estimate-box {
+    padding: 0.85rem;
+    border-radius: 1rem;
+    color: #dcffd4;
+    font-weight: 850;
+    line-height: 1.45;
+    white-space: pre-line;
+    background: rgba(112, 255, 56, 0.08);
+    border: 1px solid rgba(112, 255, 56, 0.22);
+  }
+
+  .linked-projects {
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.85rem;
+    border-radius: 1rem;
+    background: rgba(0, 183, 255, 0.055);
+    border: 1px solid rgba(0, 183, 255, 0.14);
+  }
+
+  .linked-projects h4 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+  }
+
+  .linked-project-list {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .linked-project-list a {
+    display: grid;
+    gap: 0.18rem;
+    padding: 0.65rem;
+    border-radius: 0.8rem;
+    background: rgba(2, 13, 34, 0.6);
+    border: 1px solid rgba(0, 183, 255, 0.12);
+  }
+
+  .linked-project-list span {
+    color: #bdd0ec;
+    font-size: 0.78rem;
     font-weight: 800;
   }
 
+  .card-button {
+    justify-self: start;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .projects-by-service {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .service-project-group {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .all-projects-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .project-image {
+    height: 145px;
+    background:
+      linear-gradient(135deg, rgba(0, 183, 255, 0.18), rgba(112, 255, 56, 0.12)),
+      #061a42;
+  }
+
+  .project-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .project-body {
+    padding: 1rem;
+  }
+
+  .project-tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+
+  .project-tags span {
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    color: #70ff38;
+    font-size: 0.66rem;
+    font-weight: 1000;
+    letter-spacing: 0.08em;
+    background: rgba(112, 255, 56, 0.08);
+    border: 1px solid rgba(112, 255, 56, 0.18);
+  }
+
+  .project-card p {
+    margin-top: 0.5rem;
+  }
+
+  .project-card a {
+    display: inline-flex;
+    margin-top: 0.85rem;
+  }
+
+  .cta-panel {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.2rem;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .chat-bubble {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    font-size: 2rem;
+    background: linear-gradient(135deg, #006dff, #00b7ff, #70ff38);
+    box-shadow:
+      0 0 28px rgba(0, 183, 255, 0.38),
+      0 0 42px rgba(112, 255, 56, 0.22);
+  }
+
+  .cta-panel p {
+    margin: 0 0 0.25rem;
+    color: #70ff38;
+    font-weight: 1000;
+  }
+
+  .cta-panel h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(1.45rem, 3vw, 2.25rem);
+    letter-spacing: -0.055em;
+  }
+
+  .contact-buttons {
+    justify-content: flex-end;
+    margin-top: 0;
+  }
+
+  .footer {
+    display: grid;
+    grid-template-columns: 1.2fr 0.7fr 0.8fr;
+    gap: 1.5rem;
+    padding: 2rem 0 2.4rem;
+    border-top: 1px solid rgba(0, 183, 255, 0.18);
+  }
+
+  .footer p,
+  .footer span {
+    max-width: 330px;
+    color: #bdd0ec;
+    line-height: 1.55;
+  }
+
+  .footer h3 {
+    margin: 0 0 0.85rem;
+    color: #ffffff;
+  }
+
+  .footer a:not(.brand) {
+    display: block;
+    margin: 0.45rem 0;
+    color: #bdd0ec;
+    text-decoration: none;
+  }
+
+  .footer a:hover {
+    color: #70ff38;
+  }
+
+  .empty-text {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 1rem;
+    color: #bdd0ec;
+    font-weight: 850;
+    text-align: center;
+  }
+
+  .empty-text.small {
+    padding: 0.75rem;
+    font-size: 0.86rem;
+    border-radius: 0.9rem;
+    background: rgba(0, 183, 255, 0.055);
+    border: 1px solid rgba(0, 183, 255, 0.12);
+  }
+
   @media (max-width: 1150px) {
-    .business-shell {
-      grid-template-columns: 200px minmax(0, 1fr);
+    .services-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .sidebar {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-    }
-
-    .hero-grid,
-    .services-grid,
     .projects-grid,
-    .contact-grid {
+    .all-projects-grid,
+    .pricing-list,
+    .detail-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero-section,
+    .pricing-panel,
+    .cta-panel,
+    .footer {
       grid-template-columns: 1fr;
+    }
+
+    .hero-section {
+      min-height: auto;
+    }
+
+    .hero-art {
+      min-height: 340px;
+    }
+
+    .contact-buttons {
+      justify-content: flex-start;
     }
   }
 
-  @media (max-width: 700px) {
-    .business-shell {
-      grid-template-columns: 86px minmax(0, 1fr);
+  @media (max-width: 760px) {
+    .site-header,
+    .hero-section,
+    .content-panel,
+    .pricing-panel,
+    .cta-panel,
+    .footer {
+      width: min(100% - 1rem, 1220px);
     }
 
-    .sidebar {
-      padding: 0.7rem;
-    }
-
-    .sidebar-brand {
-      padding: 0.7rem;
-    }
-
-    .sidebar-brand p {
-      font-size: 0.58rem;
-      letter-spacing: 0.12em;
-    }
-
-    .sidebar-brand h1 {
-      font-size: 0.8rem;
-      line-height: 1.1;
-    }
-
-    .sidebar-nav {
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-
-    .sidebar-nav a {
-      padding: 0.7rem 0.45rem;
-      border-radius: 0.75rem;
-      font-size: 0.68rem;
-      text-align: center;
-    }
-
-    .sidebar-footer {
-      display: none;
-    }
-
-    .main-panel {
-      padding: 0.75rem;
-    }
-
-    .hero,
-    .content-section,
-    .contact-section {
-      padding: 1.1rem;
-      border-radius: 1rem;
-    }
-
-    .hero {
-      min-height: 280px;
-    }
-
-    .hero-grid {
-      grid-template-columns: 1fr;
-      align-items: start;
-    }
-
-    .hero h2 {
-      font-size: clamp(2.1rem, 12vw, 4rem);
-    }
-
-    .hero-actions {
-      display: grid;
-      grid-template-columns: 1fr;
-    }
-
-    .section-bar {
+    .site-header {
+      position: relative;
       align-items: flex-start;
       flex-direction: column;
     }
 
-    .card-image,
-    .project-image {
-      height: 145px;
+    .nav-links {
+      justify-content: flex-start;
+    }
+
+    .nav-links a {
+      padding: 0.65rem 0.72rem;
+      font-size: 0.78rem;
+    }
+
+    .hero-section {
+      padding-top: 1rem;
+    }
+
+    .hero-section h1 {
+      font-size: clamp(2.25rem, 12vw, 3.65rem);
+    }
+
+    .hero-buttons,
+    .contact-buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .mini-stats,
+    .services-grid,
+    .detail-grid,
+    .projects-grid,
+    .all-projects-grid,
+    .pricing-list {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-art {
+      min-height: 270px;
+    }
+
+    .laptop-art {
+      width: 100%;
+      height: 260px;
+    }
+
+    .floating-card {
+      width: 46px;
+      height: 46px;
+      font-size: 1.35rem;
+    }
+
+    .file-icon {
+      top: 1rem;
+      left: 2rem;
+    }
+
+    .folder-icon {
+      top: 5rem;
+      left: 0.5rem;
+    }
+
+    .sheet-icon {
+      bottom: 3rem;
+      left: 2rem;
+    }
+
+    .section-heading {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-top,
+    .group-heading {
+      align-items: flex-start;
+    }
+
+    .modal-price-list article {
+      grid-template-columns: auto 1fr;
+    }
+
+    .modal-price-list strong {
+      grid-column: 1 / -1;
+      justify-self: start;
+      text-align: left;
+    }
+
+    .modal-note {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .cta-panel {
+      text-align: left;
+    }
+
+    .footer {
+      padding-bottom: 1.5rem;
     }
   }
 </style>

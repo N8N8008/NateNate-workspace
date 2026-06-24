@@ -1,0 +1,102 @@
+<script>
+  import { supabase } from "../lib/supabase.js";
+
+  const form = document.querySelector("#requestForm") as HTMLFormElement | null;
+  const message = document.querySelector("[data-form-message]") as HTMLElement | null;
+  const userBox = document.querySelector("[data-user-box]") as HTMLElement | null;
+  const serviceSelect = document.querySelector("#serviceSelect") as HTMLSelectElement | null;
+  const serviceTitleInput = document.querySelector("#serviceTitle") as HTMLInputElement | null;
+  const selectedPrice = document.querySelector("[data-selected-price]") as HTMLElement | null;
+
+  let currentUser: any = null;
+
+  async function loadUser() {
+    const { data } = await supabase.auth.getUser();
+    currentUser = data?.user || null;
+
+    if (userBox) {
+      userBox.textContent = currentUser
+        ? `Logged in as ${currentUser.email}`
+        : "You are not logged in. You can still submit a request, or log in first.";
+    }
+
+    const emailInput = form?.querySelector(
+      'input[name="customer_email"]'
+    ) as HTMLInputElement | null;
+
+    if (currentUser?.email && emailInput && !emailInput.value) {
+      emailInput.value = currentUser.email;
+    }
+  }
+
+  loadUser();
+
+  serviceSelect?.addEventListener("change", () => {
+    const selectedOption =
+      serviceSelect.options[serviceSelect.selectedIndex] as HTMLOptionElement | undefined;
+
+    const title = selectedOption?.dataset?.title || "";
+    const price = selectedOption?.dataset?.price || "";
+
+    if (serviceTitleInput) {
+      serviceTitleInput.value = title;
+    }
+
+    if (selectedPrice) {
+      selectedPrice.textContent = price
+        ? `Starting price: ${price}`
+        : "Message for estimate.";
+    }
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (message) {
+      message.textContent = "Submitting request...";
+      message.className = "form-message";
+    }
+
+    const formData = new FormData(form);
+
+    const requestData = {
+      user_id: currentUser?.id || null,
+      customer_name: String(formData.get("customer_name") || ""),
+      customer_email: String(formData.get("customer_email") || ""),
+      customer_phone: String(formData.get("customer_phone") || ""),
+      service_code: String(formData.get("service_code") || ""),
+      service_title: String(formData.get("service_title") || ""),
+      project_details: String(formData.get("project_details") || ""),
+      budget: String(formData.get("budget") || ""),
+      preferred_contact: String(formData.get("preferred_contact") || "email"),
+      status: "new",
+    };
+
+    const { error } = await supabase
+      .from("service_requests")
+      .insert(requestData);
+
+    if (error) {
+      console.error(error);
+
+      if (message) {
+        message.textContent =
+          "Something went wrong submitting the request. Check Supabase policies/table columns.";
+        message.classList.add("error");
+      }
+
+      return;
+    }
+
+    form.reset();
+
+    if (selectedPrice) {
+      selectedPrice.textContent = "Select a service to see the starting price.";
+    }
+
+    if (message) {
+      message.textContent = "Request sent! I’ll review it and get back to you.";
+      message.classList.add("success");
+    }
+  });
+</script>

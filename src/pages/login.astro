@@ -1,0 +1,113 @@
+<script>
+  import { supabase } from "../lib/supabase.js";
+
+  const tabs = document.querySelectorAll("[data-tab]") as NodeListOf<HTMLButtonElement>;
+  const loginForm = document.querySelector("#loginForm") as HTMLFormElement | null;
+  const signupForm = document.querySelector("#signupForm") as HTMLFormElement | null;
+  const message = document.querySelector("[data-auth-message]") as HTMLElement | null;
+  const statusBox = document.querySelector("[data-user-status]") as HTMLElement | null;
+  const logoutButton = document.querySelector("[data-logout]") as HTMLButtonElement | null;
+
+  function setMessage(text: string, type = "") {
+    if (!message) return;
+
+    message.textContent = text;
+    message.className = type ? `auth-message ${type}` : "auth-message";
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const selected = tab.dataset.tab;
+
+      tabs.forEach((button) => button.classList.remove("active"));
+      tab.classList.add("active");
+
+      loginForm?.classList.toggle("active", selected === "login");
+      signupForm?.classList.toggle("active", selected === "signup");
+
+      setMessage("");
+    });
+  });
+
+  async function loadUser() {
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user || null;
+
+    if (statusBox) {
+      statusBox.textContent = user
+        ? `You are logged in as ${user.email}`
+        : "You are not logged in yet.";
+    }
+
+    if (logoutButton) {
+      logoutButton.style.display = user ? "inline-flex" : "none";
+    }
+  }
+
+  loadUser();
+
+  loginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!loginForm) return;
+
+    setMessage("Logging in...");
+
+    const formData = new FormData(loginForm);
+
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMessage(error.message, "error");
+      return;
+    }
+
+    setMessage("Logged in! Sending you to the request page...", "success");
+
+    setTimeout(() => {
+      window.location.href = "/request-service";
+    }, 900);
+  });
+
+  signupForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!signupForm) return;
+
+    setMessage("Creating account...");
+
+    const formData = new FormData(signupForm);
+
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMessage(error.message, "error");
+      return;
+    }
+
+    setMessage(
+      "Account created. Check your email if Supabase asks for confirmation.",
+      "success"
+    );
+
+    await loadUser();
+  });
+
+  logoutButton?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    setMessage("Logged out.", "success");
+    await loadUser();
+  });
+</script>
